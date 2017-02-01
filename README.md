@@ -19,6 +19,7 @@ You need to select allow if the firewall prompt winow come's up or the program c
 - File manager
 This software is **open source**, you can use the code, or pieces of it in your own project.  
 Or you can just use my project and change the needed values.  
+You can download the client from [here] (https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Client)
 
 *Happy Coding!*  
 
