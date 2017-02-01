@@ -93,12 +93,6 @@ namespace TutServer
             comboBox3.SelectedIndex = 0;
             comboBox4.SelectedIndex = 0;
             label24.Hide();
-            for (int a = 0; a < contextMenuStrip1.Items.Count; a++ )
-            {
-                ToolStripItem i = contextMenuStrip1.Items[a];
-                tsitem.Add(i);
-                tsrefname.Add(i.Name);
-            }
             for (int a = 0; a < contextMenuStrip2.Items.Count; a++)
             {
                 ToolStripItem i = contextMenuStrip2.Items[a];
