@@ -257,3 +257,8 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/TutServer/bin/Debug/TutServer.vshost.exe.manifest
+/TutServer/bin/Debug/TutServer.vshost.exe.config
+/TutServer/bin/Debug/TutServer.vshost.exe
+/TutServer/bin/Debug/TutServer.exe.config
+/TutServer/bin/Debug/TutServer.exe
