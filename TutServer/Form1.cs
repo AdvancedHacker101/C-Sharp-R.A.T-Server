@@ -306,8 +306,6 @@ namespace TutServer
 		int i = 0;
         listView1.Items.Clear();
 
-        //MessageBox.Show("There is no place like 127.0.0.1");
-
         foreach (Socket socket in _clientSockets)
         {
             ListViewItem lvi = new ListViewItem();
@@ -316,24 +314,7 @@ namespace TutServer
             listView1.Items.Add(lvi);
             i++;
         }
-
-        //listView1.Items.Add("test");
-
 	}
-
-
-	//send data code
-
-
-/*foreach (Socket socket in _clientSockets)
-                    {
-                        if (id == serverid)
-                        {
-                            socket.Send(data);
-                        }
-                        id++;
-                    }*/
-// Disconnect all clients
 
     private void CloseAllSockets()
     {
@@ -374,7 +355,7 @@ namespace TutServer
             {
                 socket = _serverSocket.EndAccept(AR);
             }
-            catch (Exception) // I cannot seem to avoid this (on exit when properly closing sockets)
+            catch (Exception)
             {
                 Console.WriteLine("Accept callback error");
                 return;
@@ -386,7 +367,6 @@ namespace TutServer
            String cmd = "getinfo-" + id.ToString();
            sendCommand(cmd, id);
            socket.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, socket);
-           //Console.WriteLine("Client connected, waiting for request...");
             _serverSocket.BeginAccept(AcceptCallback, null);
         }
 
@@ -1297,12 +1277,6 @@ namespace TutServer
                 button1.Text = "Start Server";
                 listView1.Items.Clear();
             }
-        }
-
-        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            //ListClients();
-            MessageBox.Show("hello world");
         }
 
         public string Encrypt(string clearText)
