@@ -181,6 +181,25 @@
             this.columnHeader20 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader21 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader22 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.tabPage13 = new System.Windows.Forms.TabPage();
+            this.button33 = new System.Windows.Forms.Button();
+            this.button20 = new System.Windows.Forms.Button();
+            this.label27 = new System.Windows.Forms.Label();
+            this.tabPage14 = new System.Windows.Forms.TabPage();
+            this.button34 = new System.Windows.Forms.Button();
+            this.label28 = new System.Windows.Forms.Label();
+            this.tabPage15 = new System.Windows.Forms.TabPage();
+            this.button38 = new System.Windows.Forms.Button();
+            this.button37 = new System.Windows.Forms.Button();
+            this.button36 = new System.Windows.Forms.Button();
+            this.button35 = new System.Windows.Forms.Button();
+            this.comboBox6 = new System.Windows.Forms.ComboBox();
+            this.label33 = new System.Windows.Forms.Label();
+            this.label32 = new System.Windows.Forms.Label();
+            this.label31 = new System.Windows.Forms.Label();
+            this.label30 = new System.Windows.Forms.Label();
+            this.label29 = new System.Windows.Forms.Label();
+            this.listBox1 = new System.Windows.Forms.ListBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -204,6 +223,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.tabPage12.SuspendLayout();
+            this.tabPage13.SuspendLayout();
+            this.tabPage14.SuspendLayout();
+            this.tabPage15.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -220,6 +242,9 @@
             this.tabControl1.Controls.Add(this.tabPage10);
             this.tabControl1.Controls.Add(this.tabPage11);
             this.tabControl1.Controls.Add(this.tabPage12);
+            this.tabControl1.Controls.Add(this.tabPage13);
+            this.tabControl1.Controls.Add(this.tabPage14);
+            this.tabControl1.Controls.Add(this.tabPage15);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -290,6 +315,7 @@
             this.listView1.TabIndex = 2;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
+            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // columnHeader1
             // 
@@ -1671,6 +1697,199 @@
             this.columnHeader22.Text = "Password";
             this.columnHeader22.Width = 208;
             // 
+            // tabPage13
+            // 
+            this.tabPage13.Controls.Add(this.button33);
+            this.tabPage13.Controls.Add(this.button20);
+            this.tabPage13.Controls.Add(this.label27);
+            this.tabPage13.Location = new System.Drawing.Point(4, 22);
+            this.tabPage13.Name = "tabPage13";
+            this.tabPage13.Size = new System.Drawing.Size(901, 497);
+            this.tabPage13.TabIndex = 12;
+            this.tabPage13.Text = "Persistence";
+            this.tabPage13.UseVisualStyleBackColor = true;
+            // 
+            // button33
+            // 
+            this.button33.Location = new System.Drawing.Point(20, 80);
+            this.button33.Name = "button33";
+            this.button33.Size = new System.Drawing.Size(114, 23);
+            this.button33.TabIndex = 2;
+            this.button33.Text = "Bypass UAC";
+            this.button33.UseVisualStyleBackColor = true;
+            this.button33.Click += new System.EventHandler(this.button33_Click);
+            // 
+            // button20
+            // 
+            this.button20.Location = new System.Drawing.Point(20, 51);
+            this.button20.Name = "button20";
+            this.button20.Size = new System.Drawing.Size(114, 23);
+            this.button20.TabIndex = 1;
+            this.button20.Text = "Upload Akaig";
+            this.button20.UseVisualStyleBackColor = true;
+            this.button20.Click += new System.EventHandler(this.button20_Click);
+            // 
+            // label27
+            // 
+            this.label27.AutoSize = true;
+            this.label27.Location = new System.Drawing.Point(8, 13);
+            this.label27.Name = "label27";
+            this.label27.Size = new System.Drawing.Size(66, 13);
+            this.label27.TabIndex = 0;
+            this.label27.Text = "Bypass UAC";
+            // 
+            // tabPage14
+            // 
+            this.tabPage14.Controls.Add(this.button34);
+            this.tabPage14.Controls.Add(this.label28);
+            this.tabPage14.Location = new System.Drawing.Point(4, 22);
+            this.tabPage14.Name = "tabPage14";
+            this.tabPage14.Size = new System.Drawing.Size(901, 497);
+            this.tabPage14.TabIndex = 13;
+            this.tabPage14.Text = "External Apps";
+            this.tabPage14.UseVisualStyleBackColor = true;
+            // 
+            // button34
+            // 
+            this.button34.Location = new System.Drawing.Point(27, 39);
+            this.button34.Name = "button34";
+            this.button34.Size = new System.Drawing.Size(158, 23);
+            this.button34.TabIndex = 1;
+            this.button34.Text = "Launch Remote Pipe";
+            this.button34.UseVisualStyleBackColor = true;
+            this.button34.Click += new System.EventHandler(this.button34_Click);
+            // 
+            // label28
+            // 
+            this.label28.AutoSize = true;
+            this.label28.Location = new System.Drawing.Point(8, 12);
+            this.label28.Name = "label28";
+            this.label28.Size = new System.Drawing.Size(67, 13);
+            this.label28.TabIndex = 0;
+            this.label28.Text = "Proxy Server";
+            // 
+            // tabPage15
+            // 
+            this.tabPage15.Controls.Add(this.button38);
+            this.tabPage15.Controls.Add(this.button37);
+            this.tabPage15.Controls.Add(this.button36);
+            this.tabPage15.Controls.Add(this.button35);
+            this.tabPage15.Controls.Add(this.comboBox6);
+            this.tabPage15.Controls.Add(this.label33);
+            this.tabPage15.Controls.Add(this.label32);
+            this.tabPage15.Controls.Add(this.label31);
+            this.tabPage15.Controls.Add(this.label30);
+            this.tabPage15.Controls.Add(this.label29);
+            this.tabPage15.Controls.Add(this.listBox1);
+            this.tabPage15.Location = new System.Drawing.Point(4, 22);
+            this.tabPage15.Name = "tabPage15";
+            this.tabPage15.Size = new System.Drawing.Size(901, 497);
+            this.tabPage15.TabIndex = 14;
+            this.tabPage15.Text = "Plugins";
+            this.tabPage15.UseVisualStyleBackColor = true;
+            // 
+            // button38
+            // 
+            this.button38.Location = new System.Drawing.Point(551, 462);
+            this.button38.Name = "button38";
+            this.button38.Size = new System.Drawing.Size(75, 23);
+            this.button38.TabIndex = 10;
+            this.button38.Text = "Reload All";
+            this.button38.UseVisualStyleBackColor = true;
+            this.button38.Click += new System.EventHandler(this.button38_Click);
+            // 
+            // button37
+            // 
+            this.button37.Location = new System.Drawing.Point(470, 462);
+            this.button37.Name = "button37";
+            this.button37.Size = new System.Drawing.Size(75, 23);
+            this.button37.TabIndex = 9;
+            this.button37.Text = "Execute";
+            this.button37.UseVisualStyleBackColor = true;
+            this.button37.Click += new System.EventHandler(this.button37_Click);
+            // 
+            // button36
+            // 
+            this.button36.Location = new System.Drawing.Point(389, 462);
+            this.button36.Name = "button36";
+            this.button36.Size = new System.Drawing.Size(75, 23);
+            this.button36.TabIndex = 8;
+            this.button36.Text = "Remove";
+            this.button36.UseVisualStyleBackColor = true;
+            this.button36.Click += new System.EventHandler(this.button36_Click);
+            // 
+            // button35
+            // 
+            this.button35.Location = new System.Drawing.Point(308, 462);
+            this.button35.Name = "button35";
+            this.button35.Size = new System.Drawing.Size(75, 23);
+            this.button35.TabIndex = 7;
+            this.button35.Text = "Add";
+            this.button35.UseVisualStyleBackColor = true;
+            this.button35.Click += new System.EventHandler(this.button35_Click);
+            // 
+            // comboBox6
+            // 
+            this.comboBox6.FormattingEnabled = true;
+            this.comboBox6.Location = new System.Drawing.Point(364, 113);
+            this.comboBox6.Name = "comboBox6";
+            this.comboBox6.Size = new System.Drawing.Size(121, 21);
+            this.comboBox6.TabIndex = 6;
+            // 
+            // label33
+            // 
+            this.label33.AutoSize = true;
+            this.label33.Location = new System.Drawing.Point(293, 116);
+            this.label33.Name = "label33";
+            this.label33.Size = new System.Drawing.Size(65, 13);
+            this.label33.TabIndex = 5;
+            this.label33.Text = "Permissions:";
+            // 
+            // label32
+            // 
+            this.label32.AutoSize = true;
+            this.label32.Location = new System.Drawing.Point(293, 155);
+            this.label32.Name = "label32";
+            this.label32.Size = new System.Drawing.Size(63, 13);
+            this.label32.TabIndex = 4;
+            this.label32.Text = "Description:";
+            // 
+            // label31
+            // 
+            this.label31.AutoSize = true;
+            this.label31.Location = new System.Drawing.Point(293, 82);
+            this.label31.Name = "label31";
+            this.label31.Size = new System.Drawing.Size(41, 13);
+            this.label31.TabIndex = 3;
+            this.label31.Text = "Author:";
+            // 
+            // label30
+            // 
+            this.label30.AutoSize = true;
+            this.label30.Location = new System.Drawing.Point(293, 47);
+            this.label30.Name = "label30";
+            this.label30.Size = new System.Drawing.Size(45, 13);
+            this.label30.TabIndex = 2;
+            this.label30.Text = "Version:";
+            // 
+            // label29
+            // 
+            this.label29.AutoSize = true;
+            this.label29.Location = new System.Drawing.Point(293, 13);
+            this.label29.Name = "label29";
+            this.label29.Size = new System.Drawing.Size(38, 13);
+            this.label29.TabIndex = 1;
+            this.label29.Text = "Name:";
+            // 
+            // listBox1
+            // 
+            this.listBox1.FormattingEnabled = true;
+            this.listBox1.Location = new System.Drawing.Point(8, 13);
+            this.listBox1.Name = "listBox1";
+            this.listBox1.Size = new System.Drawing.Size(268, 472);
+            this.listBox1.TabIndex = 0;
+            this.listBox1.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1714,6 +1933,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.tabPage12.ResumeLayout(false);
             this.tabPage12.PerformLayout();
+            this.tabPage13.ResumeLayout(false);
+            this.tabPage13.PerformLayout();
+            this.tabPage14.ResumeLayout(false);
+            this.tabPage14.PerformLayout();
+            this.tabPage15.ResumeLayout(false);
+            this.tabPage15.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1869,6 +2094,25 @@
         private System.Windows.Forms.ColumnHeader columnHeader21;
         private System.Windows.Forms.ColumnHeader columnHeader22;
         private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.TabPage tabPage13;
+        private System.Windows.Forms.Button button33;
+        private System.Windows.Forms.Button button20;
+        private System.Windows.Forms.Label label27;
+        private System.Windows.Forms.TabPage tabPage14;
+        private System.Windows.Forms.Button button34;
+        private System.Windows.Forms.Label label28;
+        private System.Windows.Forms.TabPage tabPage15;
+        private System.Windows.Forms.Button button37;
+        private System.Windows.Forms.Button button36;
+        private System.Windows.Forms.Button button35;
+        private System.Windows.Forms.ComboBox comboBox6;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.Label label32;
+        private System.Windows.Forms.Label label31;
+        private System.Windows.Forms.Label label30;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.Button button38;
     }
 }
 

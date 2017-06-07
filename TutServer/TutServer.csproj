@@ -36,6 +36,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\TutClient\TutClient\bin\Debug\NAudio.dll</HintPath>
     </Reference>
+    <Reference Include="sCore">
+      <HintPath>..\..\TutServer\TutServer\bin\Debug\scripts\sCore.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -68,6 +71,12 @@
     <Compile Include="RDesktop.Designer.cs">
       <DependentUpon>RDesktop.cs</DependentUpon>
     </Compile>
+    <Compile Include="remotePipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="remotePipe.Designer.cs">
+      <DependentUpon>remotePipe.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Edit.resx">
       <DependentUpon>Edit.cs</DependentUpon>
     </EmbeddedResource>
@@ -85,6 +94,9 @@
     </Compile>
     <EmbeddedResource Include="RDesktop.resx">
       <DependentUpon>RDesktop.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="remotePipe.resx">
+      <DependentUpon>remotePipe.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

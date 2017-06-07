@@ -50,7 +50,7 @@ namespace TutServer
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
             System.Drawing.Rectangle scr = Screen.PrimaryScreen.WorkingArea;
-            if (!Form1.isrdFull)
+            if (!Form1.IsRdFull)
             {
                 scr = pictureBox1.DisplayRectangle;
             }

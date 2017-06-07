@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using sCore.UI;
 
 namespace TutServer
 {
@@ -22,6 +23,7 @@ namespace TutServer
             richTextBox1.ReadOnly = true;
             richTextBox1.BackColor = SystemColors.Window;
             richTextBox1.Text = content;
+            CommonControls.editorTextBox = richTextBox1;
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -91,6 +93,11 @@ namespace TutServer
         private void button1_Click(object sender, EventArgs e)
         {
             prt.saveFile(richTextBox1.Text);
+        }
+
+        private void Edit_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            CommonControls.editorTextBox = null;
         }
     }
 }

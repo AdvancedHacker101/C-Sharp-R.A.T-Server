@@ -144,6 +144,7 @@
             this.Controls.Add(this.richTextBox1);
             this.Name = "Edit";
             this.Text = "Edit";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Edit_FormClosing);
             this.Shown += new System.EventHandler(this.Edit_Shown);
             this.ResumeLayout(false);
             this.PerformLayout();
