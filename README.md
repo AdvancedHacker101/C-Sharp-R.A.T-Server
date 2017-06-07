@@ -1,4 +1,4 @@
-# C-Sharp-R.A.T-Server
+# C\# R.A.T Server
 This is the server program of the c# R.A.T.  
 You will need to run this program on your computer, and not on the target's machine.  
 The targets will connect to you with the help of this program.  
@@ -8,7 +8,7 @@ The executable is NOT published on this site, if you want the .exe you have to b
 The .dll files are published, because the project will not start without them.  
 You need to select allow if the firewall prompt winow come's up or the program can't open the TCP Server.  
 
-##Contains the basic features like:  
+## Contains the basic features like:  
 - Remote Desktop
 - Keylogger
 - Mic and Cam spy
@@ -20,7 +20,7 @@ You need to select allow if the firewall prompt winow come's up or the program c
 
 This software is **open source**, you can use the code, or pieces of it in your own project.  
 Or you can just use my project and change the needed values.  
-You can download the client from [here] (https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Client)
+You can download the client from [here](https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Client)
 
 *Happy Coding!*  
 
