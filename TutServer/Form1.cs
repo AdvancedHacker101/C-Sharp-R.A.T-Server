@@ -167,6 +167,7 @@ namespace TutServer
 
                         for (int t = pidIndex; t >= 0; t--)
                         {
+                            if (line.Length <= t) continue;
                             char value = line[t];
                             if (char.IsNumber(value))
                             {
