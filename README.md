@@ -21,6 +21,10 @@ You need to select allow if the firewall prompt winow come's up or the program c
 This software is **open source**, you can use the code, or pieces of it in your own project.  
 Or you can just use my project and change the needed values.  
 You can download the client from [here](https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Client)
+## More Information
+You can view the project licence [here](https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Server/blob/master/LICENSE)  
+You can read the code of conduct [here](https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Server/blob/master/CODE_OF_CONDUCT.md)  
+You can read how to contribute [here](https://github.com/AdvancedHacker101/C-Sharp-R.A.T-Server/blob/master/CONTRIBUTING.md)  
 
 *Happy Coding!*  
 
