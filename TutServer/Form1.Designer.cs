@@ -183,7 +183,6 @@
             this.columnHeader22 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPage13 = new System.Windows.Forms.TabPage();
             this.button33 = new System.Windows.Forms.Button();
-            this.button20 = new System.Windows.Forms.Button();
             this.label27 = new System.Windows.Forms.Label();
             this.tabPage14 = new System.Windows.Forms.TabPage();
             this.button34 = new System.Windows.Forms.Button();
@@ -1700,7 +1699,6 @@
             // tabPage13
             // 
             this.tabPage13.Controls.Add(this.button33);
-            this.tabPage13.Controls.Add(this.button20);
             this.tabPage13.Controls.Add(this.label27);
             this.tabPage13.Location = new System.Drawing.Point(4, 22);
             this.tabPage13.Name = "tabPage13";
@@ -1711,23 +1709,13 @@
             // 
             // button33
             // 
-            this.button33.Location = new System.Drawing.Point(20, 80);
+            this.button33.Location = new System.Drawing.Point(20, 39);
             this.button33.Name = "button33";
             this.button33.Size = new System.Drawing.Size(114, 23);
             this.button33.TabIndex = 2;
             this.button33.Text = "Bypass UAC";
             this.button33.UseVisualStyleBackColor = true;
             this.button33.Click += new System.EventHandler(this.button33_Click);
-            // 
-            // button20
-            // 
-            this.button20.Location = new System.Drawing.Point(20, 51);
-            this.button20.Name = "button20";
-            this.button20.Size = new System.Drawing.Size(114, 23);
-            this.button20.TabIndex = 1;
-            this.button20.Text = "Upload Akaig";
-            this.button20.UseVisualStyleBackColor = true;
-            this.button20.Click += new System.EventHandler(this.button20_Click);
             // 
             // label27
             // 
@@ -2096,7 +2084,6 @@
         private System.Windows.Forms.Label label24;
         private System.Windows.Forms.TabPage tabPage13;
         private System.Windows.Forms.Button button33;
-        private System.Windows.Forms.Button button20;
         private System.Windows.Forms.Label label27;
         private System.Windows.Forms.TabPage tabPage14;
         private System.Windows.Forms.Button button34;
