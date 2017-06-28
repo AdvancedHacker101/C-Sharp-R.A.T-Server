@@ -1,32 +1,43 @@
 ﻿using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TutServer
 {
     public partial class RDesktop : Form
     {
-
-        Form1 parent = new Form1();
+        Form parent = Application.OpenForms["Form1"];
+    
         public Bitmap image;
+        private int FPS = 80;
+        private bool mouseMovement = true;
 
         public RDesktop()
         {
             InitializeComponent();
+
+            ScreenFPS(); //this to set the fps
+
+            MessageBox.Show("Press the (Esc) Key to Exit this Function " , "Information" ,MessageBoxButtons.OK ,MessageBoxIcon.Information);
+
+           
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             if (Form1.rmouse == 1)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                if (e.Button == MouseButtons.Left)
                 {
-                    parent.loopSend("rclick-left-down");
+                  
+                    ((Form1)parent).loopSend("rclick-left-down");
                 }
 
                 else
                 {
-                    parent.loopSend("rclick-right-down");
+                  
+                    ((Form1)parent).loopSend("rclick-right-down");
                 }
             }
         }
@@ -35,54 +46,74 @@ namespace TutServer
         {
             if (Form1.rmouse == 1)
             {
-                if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                if (e.Button == MouseButtons.Left)
                 {
-                    parent.loopSend("rclick-left-up");
+               
+                    ((Form1)parent).loopSend("rclick-left-up");
                 }
 
                 else
                 {
-                    parent.loopSend("rclick-right-up");
+               
+                    ((Form1)parent).loopSend("rclick-right-up");
                 }
             }
         }
 
-        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        private async void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            System.Drawing.Rectangle scr = Screen.PrimaryScreen.WorkingArea;
-            if (!Form1.IsRdFull)
+            if (mouseMovement == true)
             {
-                scr = pictureBox1.DisplayRectangle;
-            }
-            //Console.Title = scr.Width + ";" + scr.Height;
-            try
-            {
-                int mx = (e.X * Form1.resx) / scr.Width;
-                int my = (e.Y * Form1.resy) / scr.Height;
+                Rectangle scr = Screen.PrimaryScreen.WorkingArea;
 
-                if (Form1.rmouse == 1)
+                if (Form1.IsRdFull)
                 {
-                    if (Form1.plx != e.X || Form1.ply != e.Y)
+
+                    scr = pictureBox1.DisplayRectangle;
+                }
+
+                //Console.Title = scr.Width + ";" + scr.Height;
+                try
+                {
+                    int mx = (e.X * Form1.resx) / scr.Width;
+                    int my = (e.Y * Form1.resy) / scr.Height;
+
+                    if (Form1.rmouse == 1)
                     {
-                        parent.loopSend("rmove-" + mx + ":" + my);
-                        Form1.plx = e.X;
-                        Form1.ply = e.Y;
-                        // Program.xConsole(mx + ";" + my);
+                        if (Form1.plx != e.X || Form1.ply != e.Y)
+                        {
+                           
+                            ((Form1)parent).loopSend("rmove-" + mx + ":" + my);
+                            Form1.plx = e.X;
+                            Form1.ply = e.Y;
+
+                            mouseMovement = false;
+                        }
+                        await Task.Delay(200); //this should stop the spammings of send commands -move the coursor very slowly and it will lockup so i added this
+                        mouseMovement = true; //and this switch ,cant send again for 200 ms - it works perfectly i am happy with it :-)
                     }
                 }
-            }
-            catch (Exception ex)
-            {
 
+                catch (Exception)
+                {
+
+                }
             }
         }
 
         private void RDesktop_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.Escape)
+            {
+                closeWindowToolStripMenuItem1.Show();
+            }
+
+
             if (Form1.rkeyboard == 1)
             {
 
-                String keysToSend = "";
+                string keysToSend = "";
+
                 if (e.Shift)
                     keysToSend += "+";
                 if (e.Alt)
@@ -90,9 +121,26 @@ namespace TutServer
                 if (e.Control)
                     keysToSend += "^";
 
-                if (e.KeyValue >= 65 && e.KeyValue <= 90)
-                    keysToSend += e.KeyCode.ToString().ToLower();
-                else if (e.KeyCode.ToString().Equals("Back"))
+                if (Console.CapsLock == true)//--added this to send uppercase needs more work it wont work properlly without this
+                {
+
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    {
+                        keysToSend += e.KeyCode.ToString().ToLower();
+                    }
+                }
+
+                if (Console.CapsLock == false)
+                {
+
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    {
+                        keysToSend += e.KeyCode.ToString().ToUpper();
+                    }
+                    
+                }
+                
+                if (e.KeyCode.ToString().Equals("Back"))
                     keysToSend += "{BS}";
                 else if (e.KeyCode.ToString().Equals("Pause"))
                     keysToSend += "{BREAK}";
@@ -207,24 +255,72 @@ namespace TutServer
                 else if (e.KeyValue == 243)
                     keysToSend += "ó";
 
-                parent.loopSend("rtype-" + keysToSend);
+             
+               // parent.loopSend("rtype-" + keysToSend);
+                ((Form1)parent).loopSend("rtype-" + keysToSend);
             }
         }
 
         private void RDesktop_Shown(object sender, EventArgs e)
         {
             Timer t = new Timer();
-            t.Interval = 100;
+            // t.Interval = 100;
+            t.Interval = FPS;
             t.Tick += new EventHandler(updateImage);
             t.Start();
         }
 
         private void updateImage(object sender, EventArgs e)
         {
+           // ScreenFPS(); //this to set the fps
+
             if (image != null)
             {
                 pictureBox1.Image = image;
             }
+
+            GC.Collect();  //-----added this to cleanup resources
+            GC.WaitForPendingFinalizers();
+            System.Threading.Thread.SpinWait(5000);
+        }
+
+        private void closeWindowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form1 f1 = new Form1();
+
+            if (f1.checkBoxrKeyboard.Checked)
+            {
+                f1.checkBoxrKeyboard.Checked = false;
+            }
+            if (f1.checkBoxrMouse.Checked)
+            {
+                f1.checkBoxrMouse.Checked = false;
+            }
+
+            Form1.IsRdFull = false; //reset the picture back to form1 picturebox1
+
+           
+            Close();
+        }
+        //SCREEN FPS
+       
+        public void ScreenFPS()
+        {
+            Form f1 = Application.OpenForms["Form1"];
+            int value = ((Form1)f1).trackBar1.Value;
+          
+           
+
+            if (value < 25)
+                FPS = 150;  //low
+            else if (value >= 75 && value <= 85)
+                FPS = 80; //best
+            else if (value >= 85)
+                FPS = 50; //high
+            else if (value >= 25)
+                FPS = 100; //mid
+
+           
         }
     }
 }

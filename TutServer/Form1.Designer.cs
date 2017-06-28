@@ -29,9 +29,9 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Google Chrome", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup2 = new System.Windows.Forms.ListViewGroup("Internet Explorer", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup3 = new System.Windows.Forms.ListViewGroup("Firefox", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup4 = new System.Windows.Forms.ListViewGroup("Google Chrome", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup5 = new System.Windows.Forms.ListViewGroup("Internet Explorer", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup6 = new System.Windows.Forms.ListViewGroup("Firefox", System.Windows.Forms.HorizontalAlignment.Left);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.label24 = new System.Windows.Forms.Label();
@@ -134,9 +134,17 @@
             this.button16 = new System.Windows.Forms.Button();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.tabPage8 = new System.Windows.Forms.TabPage();
-            this.button23 = new System.Windows.Forms.Button();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.lblQualityShow = new System.Windows.Forms.Label();
+            this.lblChooseScreen = new System.Windows.Forms.Label();
+            this.cmboChooseScreen = new System.Windows.Forms.ComboBox();
+            this.btnCountScreens = new System.Windows.Forms.Button();
+            this.btnStartTaskManager = new System.Windows.Forms.Button();
+            this.txtBControlKeyboard = new System.Windows.Forms.TextBox();
+            this.label34 = new System.Windows.Forms.Label();
+            this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.btnFullScreenMode = new System.Windows.Forms.Button();
+            this.checkBoxrKeyboard = new System.Windows.Forms.CheckBox();
+            this.checkBoxrMouse = new System.Windows.Forms.CheckBox();
             this.button22 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -210,6 +218,7 @@
             this.contextMenuStrip3.SuspendLayout();
             this.tabPage7.SuspendLayout();
             this.tabPage8.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tabPage9.SuspendLayout();
             this.tabPage10.SuspendLayout();
@@ -248,7 +257,7 @@
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(909, 523);
+            this.tabControl1.Size = new System.Drawing.Size(909, 576);
             this.tabControl1.TabIndex = 0;
             this.tabControl1.Click += new System.EventHandler(this.tabControl1_Click);
             // 
@@ -263,7 +272,7 @@
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(901, 497);
+            this.tabPage1.Size = new System.Drawing.Size(901, 550);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Setup";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -386,7 +395,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(901, 497);
+            this.tabPage2.Size = new System.Drawing.Size(901, 550);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Fun Menu";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -604,7 +613,7 @@
             this.tabPage3.Controls.Add(this.label13);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(901, 497);
+            this.tabPage3.Size = new System.Drawing.Size(901, 550);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Fun Menu 2";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -708,7 +717,7 @@
             this.tabPage4.Controls.Add(this.listView2);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Size = new System.Drawing.Size(901, 497);
+            this.tabPage4.Size = new System.Drawing.Size(901, 550);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Processes";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -843,7 +852,7 @@
             this.tabPage5.Controls.Add(this.button15);
             this.tabPage5.Location = new System.Drawing.Point(4, 22);
             this.tabPage5.Name = "tabPage5";
-            this.tabPage5.Size = new System.Drawing.Size(901, 497);
+            this.tabPage5.Size = new System.Drawing.Size(901, 550);
             this.tabPage5.TabIndex = 4;
             this.tabPage5.Text = "Remote Cmd";
             this.tabPage5.UseVisualStyleBackColor = true;
@@ -882,7 +891,7 @@
             this.tabPage6.Controls.Add(this.listView3);
             this.tabPage6.Location = new System.Drawing.Point(4, 22);
             this.tabPage6.Name = "tabPage6";
-            this.tabPage6.Size = new System.Drawing.Size(901, 497);
+            this.tabPage6.Size = new System.Drawing.Size(901, 550);
             this.tabPage6.TabIndex = 5;
             this.tabPage6.Text = "Files";
             this.tabPage6.UseVisualStyleBackColor = true;
@@ -1114,7 +1123,7 @@
             this.tabPage7.Controls.Add(this.richTextBox3);
             this.tabPage7.Location = new System.Drawing.Point(4, 22);
             this.tabPage7.Name = "tabPage7";
-            this.tabPage7.Size = new System.Drawing.Size(901, 497);
+            this.tabPage7.Size = new System.Drawing.Size(901, 550);
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "Keylogger";
             this.tabPage7.UseVisualStyleBackColor = true;
@@ -1169,80 +1178,189 @@
             // 
             // tabPage8
             // 
-            this.tabPage8.Controls.Add(this.button23);
-            this.tabPage8.Controls.Add(this.checkBox2);
-            this.tabPage8.Controls.Add(this.checkBox1);
+            this.tabPage8.Controls.Add(this.lblQualityShow);
+            this.tabPage8.Controls.Add(this.lblChooseScreen);
+            this.tabPage8.Controls.Add(this.cmboChooseScreen);
+            this.tabPage8.Controls.Add(this.btnCountScreens);
+            this.tabPage8.Controls.Add(this.btnStartTaskManager);
+            this.tabPage8.Controls.Add(this.txtBControlKeyboard);
+            this.tabPage8.Controls.Add(this.label34);
+            this.tabPage8.Controls.Add(this.trackBar1);
+            this.tabPage8.Controls.Add(this.btnFullScreenMode);
+            this.tabPage8.Controls.Add(this.checkBoxrKeyboard);
+            this.tabPage8.Controls.Add(this.checkBoxrMouse);
             this.tabPage8.Controls.Add(this.button22);
             this.tabPage8.Controls.Add(this.button21);
             this.tabPage8.Controls.Add(this.pictureBox1);
             this.tabPage8.Location = new System.Drawing.Point(4, 22);
             this.tabPage8.Name = "tabPage8";
-            this.tabPage8.Size = new System.Drawing.Size(901, 497);
+            this.tabPage8.Size = new System.Drawing.Size(901, 550);
             this.tabPage8.TabIndex = 7;
             this.tabPage8.Text = "Remote Desktop";
             this.tabPage8.UseVisualStyleBackColor = true;
             // 
-            // button23
+            // lblQualityShow
             // 
-            this.button23.Location = new System.Drawing.Point(397, 466);
-            this.button23.Name = "button23";
-            this.button23.Size = new System.Drawing.Size(146, 23);
-            this.button23.TabIndex = 5;
-            this.button23.Text = "Fullscreen Mode";
-            this.button23.UseVisualStyleBackColor = true;
-            this.button23.Click += new System.EventHandler(this.button23_Click);
+            this.lblQualityShow.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lblQualityShow.AutoSize = true;
+            this.lblQualityShow.BackColor = System.Drawing.Color.Yellow;
+            this.lblQualityShow.Location = new System.Drawing.Point(797, 527);
+            this.lblQualityShow.Name = "lblQualityShow";
+            this.lblQualityShow.Size = new System.Drawing.Size(33, 13);
+            this.lblQualityShow.TabIndex = 21;
+            this.lblQualityShow.Text = "(best)";
             // 
-            // checkBox2
+            // lblChooseScreen
             // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Location = new System.Drawing.Point(284, 470);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(107, 17);
-            this.checkBox2.TabIndex = 4;
-            this.checkBox2.Text = "Control Keyboard";
-            this.checkBox2.UseVisualStyleBackColor = true;
-            this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
+            this.lblChooseScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lblChooseScreen.AutoSize = true;
+            this.lblChooseScreen.Location = new System.Drawing.Point(546, 523);
+            this.lblChooseScreen.Name = "lblChooseScreen";
+            this.lblChooseScreen.Size = new System.Drawing.Size(83, 13);
+            this.lblChooseScreen.TabIndex = 20;
+            this.lblChooseScreen.Text = "Choose Screen:";
             // 
-            // checkBox1
+            // cmboChooseScreen
             // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(184, 470);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(94, 17);
-            this.checkBox1.TabIndex = 3;
-            this.checkBox1.Text = "Control Mouse";
-            this.checkBox1.UseVisualStyleBackColor = true;
-            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            this.cmboChooseScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.cmboChooseScreen.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmboChooseScreen.FormattingEnabled = true;
+            this.cmboChooseScreen.Location = new System.Drawing.Point(631, 518);
+            this.cmboChooseScreen.Name = "cmboChooseScreen";
+            this.cmboChooseScreen.Size = new System.Drawing.Size(75, 21);
+            this.cmboChooseScreen.TabIndex = 19;
+            // 
+            // btnCountScreens
+            // 
+            this.btnCountScreens.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnCountScreens.Location = new System.Drawing.Point(549, 485);
+            this.btnCountScreens.Name = "btnCountScreens";
+            this.btnCountScreens.Size = new System.Drawing.Size(157, 23);
+            this.btnCountScreens.TabIndex = 18;
+            this.btnCountScreens.Text = "Count Screens";
+            this.btnCountScreens.UseVisualStyleBackColor = true;
+            this.btnCountScreens.Click += new System.EventHandler(this.btnCountScreens_Click);
+            // 
+            // btnStartTaskManager
+            // 
+            this.btnStartTaskManager.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnStartTaskManager.Enabled = false;
+            this.btnStartTaskManager.Location = new System.Drawing.Point(395, 485);
+            this.btnStartTaskManager.Name = "btnStartTaskManager";
+            this.btnStartTaskManager.Size = new System.Drawing.Size(146, 23);
+            this.btnStartTaskManager.TabIndex = 17;
+            this.btnStartTaskManager.Text = "Start Remote TaskManager";
+            this.btnStartTaskManager.UseVisualStyleBackColor = true;
+            this.btnStartTaskManager.Click += new System.EventHandler(this.btnStartTaskManager_Click);
+            // 
+            // txtBControlKeyboard
+            // 
+            this.txtBControlKeyboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.txtBControlKeyboard.BackColor = System.Drawing.SystemColors.Window;
+            this.txtBControlKeyboard.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtBControlKeyboard.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.txtBControlKeyboard.ForeColor = System.Drawing.SystemColors.Window;
+            this.txtBControlKeyboard.Location = new System.Drawing.Point(181, 496);
+            this.txtBControlKeyboard.Multiline = true;
+            this.txtBControlKeyboard.Name = "txtBControlKeyboard";
+            this.txtBControlKeyboard.Size = new System.Drawing.Size(94, 20);
+            this.txtBControlKeyboard.TabIndex = 16;
+            this.txtBControlKeyboard.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtBControlKeyboard_KeyDown);
+            // 
+            // label34
+            // 
+            this.label34.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label34.AutoSize = true;
+            this.label34.Location = new System.Drawing.Point(756, 482);
+            this.label34.Name = "label34";
+            this.label34.Size = new System.Drawing.Size(110, 13);
+            this.label34.TabIndex = 15;
+            this.label34.Text = "Screen Refresh Rate:";
+            // 
+            // trackBar1
+            // 
+            this.trackBar1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.trackBar1.BackColor = System.Drawing.Color.Yellow;
+            this.trackBar1.Location = new System.Drawing.Point(727, 498);
+            this.trackBar1.Maximum = 100;
+            this.trackBar1.Minimum = 1;
+            this.trackBar1.Name = "trackBar1";
+            this.trackBar1.Size = new System.Drawing.Size(166, 45);
+            this.trackBar1.TabIndex = 14;
+            this.trackBar1.Value = 75;
+            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            // 
+            // btnFullScreenMode
+            // 
+            this.btnFullScreenMode.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnFullScreenMode.Enabled = false;
+            this.btnFullScreenMode.Location = new System.Drawing.Point(395, 516);
+            this.btnFullScreenMode.Name = "btnFullScreenMode";
+            this.btnFullScreenMode.Size = new System.Drawing.Size(146, 23);
+            this.btnFullScreenMode.TabIndex = 5;
+            this.btnFullScreenMode.Text = "Fullscreen Mode";
+            this.btnFullScreenMode.UseVisualStyleBackColor = true;
+            this.btnFullScreenMode.Click += new System.EventHandler(this.btnFullRemoteScreen_Click);
+            // 
+            // checkBoxrKeyboard
+            // 
+            this.checkBoxrKeyboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.checkBoxrKeyboard.AutoSize = true;
+            this.checkBoxrKeyboard.Location = new System.Drawing.Point(282, 520);
+            this.checkBoxrKeyboard.Name = "checkBoxrKeyboard";
+            this.checkBoxrKeyboard.Size = new System.Drawing.Size(107, 17);
+            this.checkBoxrKeyboard.TabIndex = 4;
+            this.checkBoxrKeyboard.Text = "Control Keyboard";
+            this.checkBoxrKeyboard.UseVisualStyleBackColor = true;
+            this.checkBoxrKeyboard.CheckedChanged += new System.EventHandler(this.checkBoxrKeyboard_CheckedChanged);
+            // 
+            // checkBoxrMouse
+            // 
+            this.checkBoxrMouse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.checkBoxrMouse.AutoSize = true;
+            this.checkBoxrMouse.Location = new System.Drawing.Point(182, 520);
+            this.checkBoxrMouse.Name = "checkBoxrMouse";
+            this.checkBoxrMouse.Size = new System.Drawing.Size(94, 17);
+            this.checkBoxrMouse.TabIndex = 3;
+            this.checkBoxrMouse.Text = "Control Mouse";
+            this.checkBoxrMouse.UseVisualStyleBackColor = true;
+            this.checkBoxrMouse.CheckedChanged += new System.EventHandler(this.checkBoxrMouse_CheckedChanged);
             // 
             // button22
             // 
-            this.button22.Location = new System.Drawing.Point(89, 466);
+            this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button22.Location = new System.Drawing.Point(87, 516);
             this.button22.Name = "button22";
             this.button22.Size = new System.Drawing.Size(75, 23);
             this.button22.TabIndex = 2;
             this.button22.Text = "Stop";
             this.button22.UseVisualStyleBackColor = true;
-            this.button22.Click += new System.EventHandler(this.button22_Click);
+            this.button22.Click += new System.EventHandler(this.btnStopRemoteScreen_Click);
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(8, 466);
+            this.button21.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button21.Location = new System.Drawing.Point(6, 516);
             this.button21.Name = "button21";
             this.button21.Size = new System.Drawing.Size(75, 23);
             this.button21.TabIndex = 1;
             this.button21.Text = "Start";
             this.button21.UseVisualStyleBackColor = true;
-            this.button21.Click += new System.EventHandler(this.button21_Click);
+            this.button21.Click += new System.EventHandler(this.btnStartRemoteScreen_Click);
             // 
             // pictureBox1
             // 
+            this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox1.Location = new System.Drawing.Point(8, 3);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(890, 457);
+            this.pictureBox1.Size = new System.Drawing.Size(890, 476);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Tag = "rdesktop";
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
@@ -1254,7 +1372,7 @@
             this.tabPage9.Controls.Add(this.button24);
             this.tabPage9.Location = new System.Drawing.Point(4, 22);
             this.tabPage9.Name = "tabPage9";
-            this.tabPage9.Size = new System.Drawing.Size(901, 497);
+            this.tabPage9.Size = new System.Drawing.Size(901, 550);
             this.tabPage9.TabIndex = 8;
             this.tabPage9.Text = "Audio";
             this.tabPage9.UseVisualStyleBackColor = true;
@@ -1311,7 +1429,7 @@
             this.tabPage10.Controls.Add(this.pictureBox2);
             this.tabPage10.Location = new System.Drawing.Point(4, 22);
             this.tabPage10.Name = "tabPage10";
-            this.tabPage10.Size = new System.Drawing.Size(901, 497);
+            this.tabPage10.Size = new System.Drawing.Size(901, 550);
             this.tabPage10.TabIndex = 9;
             this.tabPage10.Text = "WebCam";
             this.tabPage10.UseVisualStyleBackColor = true;
@@ -1379,7 +1497,7 @@
             this.tabPage11.Controls.Add(this.label18);
             this.tabPage11.Location = new System.Drawing.Point(4, 22);
             this.tabPage11.Name = "tabPage11";
-            this.tabPage11.Size = new System.Drawing.Size(901, 497);
+            this.tabPage11.Size = new System.Drawing.Size(901, 550);
             this.tabPage11.TabIndex = 10;
             this.tabPage11.Text = "DDoS";
             this.tabPage11.UseVisualStyleBackColor = true;
@@ -1623,7 +1741,7 @@
             this.tabPage12.Controls.Add(this.listView6);
             this.tabPage12.Location = new System.Drawing.Point(4, 22);
             this.tabPage12.Name = "tabPage12";
-            this.tabPage12.Size = new System.Drawing.Size(901, 497);
+            this.tabPage12.Size = new System.Drawing.Size(901, 550);
             this.tabPage12.TabIndex = 11;
             this.tabPage12.Text = "Password Manager";
             this.tabPage12.UseVisualStyleBackColor = true;
@@ -1664,16 +1782,16 @@
             this.columnHeader21,
             this.columnHeader22});
             this.listView6.FullRowSelect = true;
-            listViewGroup1.Header = "Google Chrome";
-            listViewGroup1.Name = "listViewGroup1";
-            listViewGroup2.Header = "Internet Explorer";
-            listViewGroup2.Name = "listViewGroup2";
-            listViewGroup3.Header = "Firefox";
-            listViewGroup3.Name = "listViewGroup3";
+            listViewGroup4.Header = "Google Chrome";
+            listViewGroup4.Name = "listViewGroup1";
+            listViewGroup5.Header = "Internet Explorer";
+            listViewGroup5.Name = "listViewGroup2";
+            listViewGroup6.Header = "Firefox";
+            listViewGroup6.Name = "listViewGroup3";
             this.listView6.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup1,
-            listViewGroup2,
-            listViewGroup3});
+            listViewGroup4,
+            listViewGroup5,
+            listViewGroup6});
             this.listView6.Location = new System.Drawing.Point(8, 43);
             this.listView6.Name = "listView6";
             this.listView6.Size = new System.Drawing.Size(885, 419);
@@ -1702,7 +1820,7 @@
             this.tabPage13.Controls.Add(this.label27);
             this.tabPage13.Location = new System.Drawing.Point(4, 22);
             this.tabPage13.Name = "tabPage13";
-            this.tabPage13.Size = new System.Drawing.Size(901, 497);
+            this.tabPage13.Size = new System.Drawing.Size(901, 550);
             this.tabPage13.TabIndex = 12;
             this.tabPage13.Text = "Persistence";
             this.tabPage13.UseVisualStyleBackColor = true;
@@ -1732,7 +1850,7 @@
             this.tabPage14.Controls.Add(this.label28);
             this.tabPage14.Location = new System.Drawing.Point(4, 22);
             this.tabPage14.Name = "tabPage14";
-            this.tabPage14.Size = new System.Drawing.Size(901, 497);
+            this.tabPage14.Size = new System.Drawing.Size(901, 550);
             this.tabPage14.TabIndex = 13;
             this.tabPage14.Text = "External Apps";
             this.tabPage14.UseVisualStyleBackColor = true;
@@ -1771,7 +1889,7 @@
             this.tabPage15.Controls.Add(this.listBox1);
             this.tabPage15.Location = new System.Drawing.Point(4, 22);
             this.tabPage15.Name = "tabPage15";
-            this.tabPage15.Size = new System.Drawing.Size(901, 497);
+            this.tabPage15.Size = new System.Drawing.Size(901, 550);
             this.tabPage15.TabIndex = 14;
             this.tabPage15.Text = "Plugins";
             this.tabPage15.UseVisualStyleBackColor = true;
@@ -1882,7 +2000,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(909, 523);
+            this.ClientSize = new System.Drawing.Size(909, 576);
             this.Controls.Add(this.tabControl1);
             this.Name = "Form1";
             this.Text = "Tutorial C&C Server";
@@ -1905,6 +2023,7 @@
             this.tabPage7.ResumeLayout(false);
             this.tabPage8.ResumeLayout(false);
             this.tabPage8.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.tabPage9.ResumeLayout(false);
             this.tabPage10.ResumeLayout(false);
@@ -2034,9 +2153,9 @@
         private System.Windows.Forms.Button button16;
         private System.Windows.Forms.RichTextBox richTextBox3;
         private System.Windows.Forms.TabPage tabPage8;
-        private System.Windows.Forms.Button button23;
-        private System.Windows.Forms.CheckBox checkBox2;
-        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Button btnFullScreenMode;
+        public System.Windows.Forms.CheckBox checkBoxrKeyboard;
+        public System.Windows.Forms.CheckBox checkBoxrMouse;
         private System.Windows.Forms.Button button22;
         private System.Windows.Forms.Button button21;
         private System.Windows.Forms.PictureBox pictureBox1;
@@ -2100,6 +2219,14 @@
         private System.Windows.Forms.Label label29;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.Button button38;
+        public System.Windows.Forms.Label lblQualityShow;
+        private System.Windows.Forms.Label lblChooseScreen;
+        private System.Windows.Forms.ComboBox cmboChooseScreen;
+        private System.Windows.Forms.Button btnCountScreens;
+        private System.Windows.Forms.Button btnStartTaskManager;
+        private System.Windows.Forms.TextBox txtBControlKeyboard;
+        private System.Windows.Forms.Label label34;
+        public System.Windows.Forms.TrackBar trackBar1;
     }
 }
 
