@@ -95,9 +95,8 @@
             this.killToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.refreshToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPage5 = new System.Windows.Forms.TabPage();
-            this.lblCMD = new System.Windows.Forms.Label();
             this.textBox5 = new System.Windows.Forms.TextBox();
-            this.richTextBoxCMD = new System.Windows.Forms.RichTextBox();
+            this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.button15 = new System.Windows.Forms.Button();
             this.tabPage6 = new System.Windows.Forms.TabPage();
             this.listView3 = new System.Windows.Forms.ListView();
@@ -135,19 +134,11 @@
             this.button16 = new System.Windows.Forms.Button();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
             this.tabPage8 = new System.Windows.Forms.TabPage();
-            this.btnCountScreens = new System.Windows.Forms.Button();
-            this.lblChooseScreen = new System.Windows.Forms.Label();
-            this.cmboChooseScreen = new System.Windows.Forms.ComboBox();
-            this.btnStartTaskManager = new System.Windows.Forms.Button();
-            this.txtBControlKeyboard = new System.Windows.Forms.TextBox();
-            this.label27 = new System.Windows.Forms.Label();
-            this.lblQualityShow = new System.Windows.Forms.Label();
-            this.trackBar1 = new System.Windows.Forms.TrackBar();
-            this.btnFullRemoteScreen = new System.Windows.Forms.Button();
-            this.checkBoxrKeyboard = new System.Windows.Forms.CheckBox();
-            this.checkBoxrMouse = new System.Windows.Forms.CheckBox();
-            this.btnStopRemoteScreen = new System.Windows.Forms.Button();
-            this.btnStartRemoteScreen = new System.Windows.Forms.Button();
+            this.button23 = new System.Windows.Forms.Button();
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.button22 = new System.Windows.Forms.Button();
+            this.button21 = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tabPage9 = new System.Windows.Forms.TabPage();
             this.button25 = new System.Windows.Forms.Button();
@@ -190,6 +181,24 @@
             this.columnHeader20 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader21 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader22 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.tabPage13 = new System.Windows.Forms.TabPage();
+            this.button33 = new System.Windows.Forms.Button();
+            this.label27 = new System.Windows.Forms.Label();
+            this.tabPage14 = new System.Windows.Forms.TabPage();
+            this.button34 = new System.Windows.Forms.Button();
+            this.label28 = new System.Windows.Forms.Label();
+            this.tabPage15 = new System.Windows.Forms.TabPage();
+            this.button38 = new System.Windows.Forms.Button();
+            this.button37 = new System.Windows.Forms.Button();
+            this.button36 = new System.Windows.Forms.Button();
+            this.button35 = new System.Windows.Forms.Button();
+            this.comboBox6 = new System.Windows.Forms.ComboBox();
+            this.label33 = new System.Windows.Forms.Label();
+            this.label32 = new System.Windows.Forms.Label();
+            this.label31 = new System.Windows.Forms.Label();
+            this.label30 = new System.Windows.Forms.Label();
+            this.label29 = new System.Windows.Forms.Label();
+            this.listBox1 = new System.Windows.Forms.ListBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -201,7 +210,6 @@
             this.contextMenuStrip3.SuspendLayout();
             this.tabPage7.SuspendLayout();
             this.tabPage8.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tabPage9.SuspendLayout();
             this.tabPage10.SuspendLayout();
@@ -214,6 +222,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.tabPage12.SuspendLayout();
+            this.tabPage13.SuspendLayout();
+            this.tabPage14.SuspendLayout();
+            this.tabPage15.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -230,11 +241,14 @@
             this.tabControl1.Controls.Add(this.tabPage10);
             this.tabControl1.Controls.Add(this.tabPage11);
             this.tabControl1.Controls.Add(this.tabPage12);
+            this.tabControl1.Controls.Add(this.tabPage13);
+            this.tabControl1.Controls.Add(this.tabPage14);
+            this.tabControl1.Controls.Add(this.tabPage15);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(909, 575);
+            this.tabControl1.Size = new System.Drawing.Size(909, 523);
             this.tabControl1.TabIndex = 0;
             this.tabControl1.Click += new System.EventHandler(this.tabControl1_Click);
             // 
@@ -249,7 +263,7 @@
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(901, 549);
+            this.tabPage1.Size = new System.Drawing.Size(901, 497);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Setup";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -265,10 +279,9 @@
             // 
             // label2
             // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label2.Location = new System.Drawing.Point(726, 149);
+            this.label2.Location = new System.Drawing.Point(557, 178);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(81, 20);
             this.label2.TabIndex = 4;
@@ -276,8 +289,7 @@
             // 
             // button2
             // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(726, 105);
+            this.button2.Location = new System.Drawing.Point(557, 134);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(156, 23);
             this.button2.TabIndex = 3;
@@ -287,9 +299,6 @@
             // 
             // listView1
             // 
-            this.listView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2,
@@ -301,35 +310,35 @@
             this.listView1.Location = new System.Drawing.Point(10, 105);
             this.listView1.MultiSelect = false;
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(710, 421);
+            this.listView1.Size = new System.Drawing.Size(541, 384);
             this.listView1.TabIndex = 2;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
+            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // columnHeader1
             // 
             this.columnHeader1.Text = "Client ID";
-            this.columnHeader1.Width = 70;
             // 
             // columnHeader2
             // 
             this.columnHeader2.Text = "Pc Name";
-            this.columnHeader2.Width = 154;
+            this.columnHeader2.Width = 113;
             // 
             // columnHeader3
             // 
             this.columnHeader3.Text = "Lan IP";
-            this.columnHeader3.Width = 189;
+            this.columnHeader3.Width = 115;
             // 
             // columnHeader4
             // 
             this.columnHeader4.Text = "Time";
-            this.columnHeader4.Width = 159;
+            this.columnHeader4.Width = 123;
             // 
             // columnHeader5
             // 
             this.columnHeader5.Text = "AV";
-            this.columnHeader5.Width = 144;
+            this.columnHeader5.Width = 116;
             // 
             // button1
             // 
@@ -377,7 +386,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(901, 549);
+            this.tabPage2.Size = new System.Drawing.Size(901, 497);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Fun Menu";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -578,9 +587,9 @@
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(6, 12);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(109, 13);
+            this.label3.Size = new System.Drawing.Size(71, 13);
             this.label3.TabIndex = 0;
-            this.label3.Text = "Send A Message Box";
+            this.label3.Text = "Message Box";
             // 
             // tabPage3
             // 
@@ -595,7 +604,7 @@
             this.tabPage3.Controls.Add(this.label13);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(901, 549);
+            this.tabPage3.Size = new System.Drawing.Size(901, 497);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Fun Menu 2";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -699,7 +708,7 @@
             this.tabPage4.Controls.Add(this.listView2);
             this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Size = new System.Drawing.Size(901, 549);
+            this.tabPage4.Size = new System.Drawing.Size(901, 497);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Processes";
             this.tabPage4.UseVisualStyleBackColor = true;
@@ -829,50 +838,34 @@
             // 
             // tabPage5
             // 
-            this.tabPage5.Controls.Add(this.lblCMD);
             this.tabPage5.Controls.Add(this.textBox5);
-            this.tabPage5.Controls.Add(this.richTextBoxCMD);
+            this.tabPage5.Controls.Add(this.richTextBox2);
             this.tabPage5.Controls.Add(this.button15);
             this.tabPage5.Location = new System.Drawing.Point(4, 22);
             this.tabPage5.Name = "tabPage5";
-            this.tabPage5.Size = new System.Drawing.Size(901, 549);
+            this.tabPage5.Size = new System.Drawing.Size(901, 497);
             this.tabPage5.TabIndex = 4;
             this.tabPage5.Text = "Remote Cmd";
             this.tabPage5.UseVisualStyleBackColor = true;
             // 
-            // lblCMD
-            // 
-            this.lblCMD.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.lblCMD.AutoSize = true;
-            this.lblCMD.Location = new System.Drawing.Point(9, 472);
-            this.lblCMD.Name = "lblCMD";
-            this.lblCMD.Size = new System.Drawing.Size(193, 13);
-            this.lblCMD.TabIndex = 3;
-            this.lblCMD.Text = "Connect To The Client and Start CMD .";
-            // 
             // textBox5
             // 
-            this.textBox5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox5.Location = new System.Drawing.Point(8, 446);
+            this.textBox5.Location = new System.Drawing.Point(8, 469);
             this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(745, 20);
+            this.textBox5.Size = new System.Drawing.Size(885, 20);
             this.textBox5.TabIndex = 2;
             this.textBox5.Tag = "rcmd";
             this.textBox5.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox5_KeyDown);
             // 
-            // richTextBoxCMD
+            // richTextBox2
             // 
-            this.richTextBoxCMD.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBoxCMD.BackColor = System.Drawing.Color.Black;
-            this.richTextBoxCMD.ForeColor = System.Drawing.Color.White;
-            this.richTextBoxCMD.Location = new System.Drawing.Point(8, 42);
-            this.richTextBoxCMD.Name = "richTextBoxCMD";
-            this.richTextBoxCMD.Size = new System.Drawing.Size(745, 402);
-            this.richTextBoxCMD.TabIndex = 1;
-            this.richTextBoxCMD.Text = "";
+            this.richTextBox2.BackColor = System.Drawing.Color.Black;
+            this.richTextBox2.ForeColor = System.Drawing.Color.White;
+            this.richTextBox2.Location = new System.Drawing.Point(8, 42);
+            this.richTextBox2.Name = "richTextBox2";
+            this.richTextBox2.Size = new System.Drawing.Size(885, 425);
+            this.richTextBox2.TabIndex = 1;
+            this.richTextBox2.Text = "";
             // 
             // button15
             // 
@@ -882,14 +875,14 @@
             this.button15.TabIndex = 0;
             this.button15.Text = "Start Cmd";
             this.button15.UseVisualStyleBackColor = true;
-            this.button15.Click += new System.EventHandler(this.btnStopStartCmd_Click);
+            this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // tabPage6
             // 
             this.tabPage6.Controls.Add(this.listView3);
             this.tabPage6.Location = new System.Drawing.Point(4, 22);
             this.tabPage6.Name = "tabPage6";
-            this.tabPage6.Size = new System.Drawing.Size(901, 549);
+            this.tabPage6.Size = new System.Drawing.Size(901, 497);
             this.tabPage6.TabIndex = 5;
             this.tabPage6.Text = "Files";
             this.tabPage6.UseVisualStyleBackColor = true;
@@ -1121,7 +1114,7 @@
             this.tabPage7.Controls.Add(this.richTextBox3);
             this.tabPage7.Location = new System.Drawing.Point(4, 22);
             this.tabPage7.Name = "tabPage7";
-            this.tabPage7.Size = new System.Drawing.Size(901, 549);
+            this.tabPage7.Size = new System.Drawing.Size(901, 497);
             this.tabPage7.TabIndex = 6;
             this.tabPage7.Text = "Keylogger";
             this.tabPage7.UseVisualStyleBackColor = true;
@@ -1176,184 +1169,80 @@
             // 
             // tabPage8
             // 
-            this.tabPage8.Controls.Add(this.btnCountScreens);
-            this.tabPage8.Controls.Add(this.lblChooseScreen);
-            this.tabPage8.Controls.Add(this.cmboChooseScreen);
-            this.tabPage8.Controls.Add(this.btnStartTaskManager);
-            this.tabPage8.Controls.Add(this.txtBControlKeyboard);
-            this.tabPage8.Controls.Add(this.label27);
-            this.tabPage8.Controls.Add(this.lblQualityShow);
-            this.tabPage8.Controls.Add(this.trackBar1);
-            this.tabPage8.Controls.Add(this.btnFullRemoteScreen);
-            this.tabPage8.Controls.Add(this.checkBoxrKeyboard);
-            this.tabPage8.Controls.Add(this.checkBoxrMouse);
-            this.tabPage8.Controls.Add(this.btnStopRemoteScreen);
-            this.tabPage8.Controls.Add(this.btnStartRemoteScreen);
+            this.tabPage8.Controls.Add(this.button23);
+            this.tabPage8.Controls.Add(this.checkBox2);
+            this.tabPage8.Controls.Add(this.checkBox1);
+            this.tabPage8.Controls.Add(this.button22);
+            this.tabPage8.Controls.Add(this.button21);
             this.tabPage8.Controls.Add(this.pictureBox1);
             this.tabPage8.Location = new System.Drawing.Point(4, 22);
             this.tabPage8.Name = "tabPage8";
-            this.tabPage8.Size = new System.Drawing.Size(901, 549);
+            this.tabPage8.Size = new System.Drawing.Size(901, 497);
             this.tabPage8.TabIndex = 7;
             this.tabPage8.Text = "Remote Desktop";
             this.tabPage8.UseVisualStyleBackColor = true;
             // 
-            // btnCountScreens
+            // button23
             // 
-            this.btnCountScreens.Location = new System.Drawing.Point(549, 489);
-            this.btnCountScreens.Name = "btnCountScreens";
-            this.btnCountScreens.Size = new System.Drawing.Size(157, 23);
-            this.btnCountScreens.TabIndex = 13;
-            this.btnCountScreens.Text = "Count Screens";
-            this.btnCountScreens.UseVisualStyleBackColor = true;
-            this.btnCountScreens.Click += new System.EventHandler(this.btnCountScreens_Click);
+            this.button23.Location = new System.Drawing.Point(397, 466);
+            this.button23.Name = "button23";
+            this.button23.Size = new System.Drawing.Size(146, 23);
+            this.button23.TabIndex = 5;
+            this.button23.Text = "Fullscreen Mode";
+            this.button23.UseVisualStyleBackColor = true;
+            this.button23.Click += new System.EventHandler(this.button23_Click);
             // 
-            // lblChooseScreen
+            // checkBox2
             // 
-            this.lblChooseScreen.AutoSize = true;
-            this.lblChooseScreen.Location = new System.Drawing.Point(546, 523);
-            this.lblChooseScreen.Name = "lblChooseScreen";
-            this.lblChooseScreen.Size = new System.Drawing.Size(83, 13);
-            this.lblChooseScreen.TabIndex = 12;
-            this.lblChooseScreen.Text = "Choose Screen:";
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(284, 470);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(107, 17);
+            this.checkBox2.TabIndex = 4;
+            this.checkBox2.Text = "Control Keyboard";
+            this.checkBox2.UseVisualStyleBackColor = true;
+            this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
             // 
-            // cmboChooseScreen
+            // checkBox1
             // 
-            this.cmboChooseScreen.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmboChooseScreen.FormattingEnabled = true;
-            this.cmboChooseScreen.Location = new System.Drawing.Point(631, 518);
-            this.cmboChooseScreen.Name = "cmboChooseScreen";
-            this.cmboChooseScreen.Size = new System.Drawing.Size(75, 21);
-            this.cmboChooseScreen.TabIndex = 11;
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(184, 470);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(94, 17);
+            this.checkBox1.TabIndex = 3;
+            this.checkBox1.Text = "Control Mouse";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
-            // btnStartTaskManager
+            // button22
             // 
-            this.btnStartTaskManager.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnStartTaskManager.Location = new System.Drawing.Point(394, 489);
-            this.btnStartTaskManager.Name = "btnStartTaskManager";
-            this.btnStartTaskManager.Size = new System.Drawing.Size(146, 23);
-            this.btnStartTaskManager.TabIndex = 10;
-            this.btnStartTaskManager.Text = "Start Remote TaskManager";
-            this.btnStartTaskManager.UseVisualStyleBackColor = true;
-            this.btnStartTaskManager.Click += new System.EventHandler(this.btnStartTaskManager_Click);
+            this.button22.Location = new System.Drawing.Point(89, 466);
+            this.button22.Name = "button22";
+            this.button22.Size = new System.Drawing.Size(75, 23);
+            this.button22.TabIndex = 2;
+            this.button22.Text = "Stop";
+            this.button22.UseVisualStyleBackColor = true;
+            this.button22.Click += new System.EventHandler(this.button22_Click);
             // 
-            // txtBControlKeyboard
+            // button21
             // 
-            this.txtBControlKeyboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.txtBControlKeyboard.BackColor = System.Drawing.SystemColors.Window;
-            this.txtBControlKeyboard.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtBControlKeyboard.Cursor = System.Windows.Forms.Cursors.Arrow;
-            this.txtBControlKeyboard.ForeColor = System.Drawing.SystemColors.Window;
-            this.txtBControlKeyboard.Location = new System.Drawing.Point(181, 494);
-            this.txtBControlKeyboard.Multiline = true;
-            this.txtBControlKeyboard.Name = "txtBControlKeyboard";
-            this.txtBControlKeyboard.Size = new System.Drawing.Size(94, 20);
-            this.txtBControlKeyboard.TabIndex = 9;
-            this.txtBControlKeyboard.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtBControlKeyboard_KeyDown);
-            // 
-            // label27
-            // 
-            this.label27.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.label27.AutoSize = true;
-            this.label27.Location = new System.Drawing.Point(756, 480);
-            this.label27.Name = "label27";
-            this.label27.Size = new System.Drawing.Size(110, 13);
-            this.label27.TabIndex = 8;
-            this.label27.Text = "Screen Refresh Rate:";
-            // 
-            // lblQualityShow
-            // 
-            this.lblQualityShow.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblQualityShow.AutoSize = true;
-            this.lblQualityShow.BackColor = System.Drawing.Color.Yellow;
-            this.lblQualityShow.Location = new System.Drawing.Point(794, 527);
-            this.lblQualityShow.Name = "lblQualityShow";
-            this.lblQualityShow.Size = new System.Drawing.Size(33, 13);
-            this.lblQualityShow.TabIndex = 7;
-            this.lblQualityShow.Text = "(best)";
-            // 
-            // trackBar1
-            // 
-            this.trackBar1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.trackBar1.BackColor = System.Drawing.Color.Yellow;
-            this.trackBar1.Location = new System.Drawing.Point(727, 496);
-            this.trackBar1.Maximum = 100;
-            this.trackBar1.Minimum = 1;
-            this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(166, 45);
-            this.trackBar1.TabIndex = 6;
-            this.trackBar1.Value = 75;
-            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
-            // 
-            // btnFullRemoteScreen
-            // 
-            this.btnFullRemoteScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnFullRemoteScreen.Location = new System.Drawing.Point(394, 518);
-            this.btnFullRemoteScreen.Name = "btnFullRemoteScreen";
-            this.btnFullRemoteScreen.Size = new System.Drawing.Size(146, 23);
-            this.btnFullRemoteScreen.TabIndex = 5;
-            this.btnFullRemoteScreen.Text = "Fullscreen Mode";
-            this.btnFullRemoteScreen.UseVisualStyleBackColor = true;
-            this.btnFullRemoteScreen.Click += new System.EventHandler(this.btnFullRemoteScreen_Click);
-            // 
-            // checkBoxrKeyboard
-            // 
-            this.checkBoxrKeyboard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.checkBoxrKeyboard.AutoSize = true;
-            this.checkBoxrKeyboard.Location = new System.Drawing.Point(281, 522);
-            this.checkBoxrKeyboard.Name = "checkBoxrKeyboard";
-            this.checkBoxrKeyboard.Size = new System.Drawing.Size(107, 17);
-            this.checkBoxrKeyboard.TabIndex = 4;
-            this.checkBoxrKeyboard.Text = "Control Keyboard";
-            this.checkBoxrKeyboard.UseVisualStyleBackColor = true;
-            this.checkBoxrKeyboard.CheckedChanged += new System.EventHandler(this.checkBoxrKeyboard_CheckedChanged);
-            // 
-            // checkBoxrMouse
-            // 
-            this.checkBoxrMouse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.checkBoxrMouse.AutoSize = true;
-            this.checkBoxrMouse.Location = new System.Drawing.Point(181, 522);
-            this.checkBoxrMouse.Name = "checkBoxrMouse";
-            this.checkBoxrMouse.Size = new System.Drawing.Size(94, 17);
-            this.checkBoxrMouse.TabIndex = 3;
-            this.checkBoxrMouse.Text = "Control Mouse";
-            this.checkBoxrMouse.UseVisualStyleBackColor = true;
-            this.checkBoxrMouse.CheckedChanged += new System.EventHandler(this.checkBoxrMouse_CheckedChanged);
-            // 
-            // btnStopRemoteScreen
-            // 
-            this.btnStopRemoteScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnStopRemoteScreen.Location = new System.Drawing.Point(86, 518);
-            this.btnStopRemoteScreen.Name = "btnStopRemoteScreen";
-            this.btnStopRemoteScreen.Size = new System.Drawing.Size(75, 23);
-            this.btnStopRemoteScreen.TabIndex = 2;
-            this.btnStopRemoteScreen.Text = "Stop";
-            this.btnStopRemoteScreen.UseVisualStyleBackColor = true;
-            this.btnStopRemoteScreen.Click += new System.EventHandler(this.btnStopRemoteScreen_Click);
-            // 
-            // btnStartRemoteScreen
-            // 
-            this.btnStartRemoteScreen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnStartRemoteScreen.Location = new System.Drawing.Point(5, 518);
-            this.btnStartRemoteScreen.Name = "btnStartRemoteScreen";
-            this.btnStartRemoteScreen.Size = new System.Drawing.Size(75, 23);
-            this.btnStartRemoteScreen.TabIndex = 1;
-            this.btnStartRemoteScreen.Text = "Start";
-            this.btnStartRemoteScreen.UseVisualStyleBackColor = true;
-            this.btnStartRemoteScreen.Click += new System.EventHandler(this.btnStartRemoteScreen_Click);
+            this.button21.Location = new System.Drawing.Point(8, 466);
+            this.button21.Name = "button21";
+            this.button21.Size = new System.Drawing.Size(75, 23);
+            this.button21.TabIndex = 1;
+            this.button21.Text = "Start";
+            this.button21.UseVisualStyleBackColor = true;
+            this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.pictureBox1.Location = new System.Drawing.Point(8, -22);
+            this.pictureBox1.Location = new System.Drawing.Point(8, 3);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(885, 499);
+            this.pictureBox1.Size = new System.Drawing.Size(890, 457);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Tag = "rdesktop";
-            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click_1);
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
@@ -1365,7 +1254,7 @@
             this.tabPage9.Controls.Add(this.button24);
             this.tabPage9.Location = new System.Drawing.Point(4, 22);
             this.tabPage9.Name = "tabPage9";
-            this.tabPage9.Size = new System.Drawing.Size(901, 549);
+            this.tabPage9.Size = new System.Drawing.Size(901, 497);
             this.tabPage9.TabIndex = 8;
             this.tabPage9.Text = "Audio";
             this.tabPage9.UseVisualStyleBackColor = true;
@@ -1422,7 +1311,7 @@
             this.tabPage10.Controls.Add(this.pictureBox2);
             this.tabPage10.Location = new System.Drawing.Point(4, 22);
             this.tabPage10.Name = "tabPage10";
-            this.tabPage10.Size = new System.Drawing.Size(901, 549);
+            this.tabPage10.Size = new System.Drawing.Size(901, 497);
             this.tabPage10.TabIndex = 9;
             this.tabPage10.Text = "WebCam";
             this.tabPage10.UseVisualStyleBackColor = true;
@@ -1490,7 +1379,7 @@
             this.tabPage11.Controls.Add(this.label18);
             this.tabPage11.Location = new System.Drawing.Point(4, 22);
             this.tabPage11.Name = "tabPage11";
-            this.tabPage11.Size = new System.Drawing.Size(901, 549);
+            this.tabPage11.Size = new System.Drawing.Size(901, 497);
             this.tabPage11.TabIndex = 10;
             this.tabPage11.Text = "DDoS";
             this.tabPage11.UseVisualStyleBackColor = true;
@@ -1734,7 +1623,7 @@
             this.tabPage12.Controls.Add(this.listView6);
             this.tabPage12.Location = new System.Drawing.Point(4, 22);
             this.tabPage12.Name = "tabPage12";
-            this.tabPage12.Size = new System.Drawing.Size(901, 549);
+            this.tabPage12.Size = new System.Drawing.Size(901, 497);
             this.tabPage12.TabIndex = 11;
             this.tabPage12.Text = "Password Manager";
             this.tabPage12.UseVisualStyleBackColor = true;
@@ -1807,16 +1696,197 @@
             this.columnHeader22.Text = "Password";
             this.columnHeader22.Width = 208;
             // 
+            // tabPage13
+            // 
+            this.tabPage13.Controls.Add(this.button33);
+            this.tabPage13.Controls.Add(this.label27);
+            this.tabPage13.Location = new System.Drawing.Point(4, 22);
+            this.tabPage13.Name = "tabPage13";
+            this.tabPage13.Size = new System.Drawing.Size(901, 497);
+            this.tabPage13.TabIndex = 12;
+            this.tabPage13.Text = "Persistence";
+            this.tabPage13.UseVisualStyleBackColor = true;
+            // 
+            // button33
+            // 
+            this.button33.Location = new System.Drawing.Point(20, 39);
+            this.button33.Name = "button33";
+            this.button33.Size = new System.Drawing.Size(114, 23);
+            this.button33.TabIndex = 2;
+            this.button33.Text = "Bypass UAC";
+            this.button33.UseVisualStyleBackColor = true;
+            this.button33.Click += new System.EventHandler(this.button33_Click);
+            // 
+            // label27
+            // 
+            this.label27.AutoSize = true;
+            this.label27.Location = new System.Drawing.Point(8, 13);
+            this.label27.Name = "label27";
+            this.label27.Size = new System.Drawing.Size(66, 13);
+            this.label27.TabIndex = 0;
+            this.label27.Text = "Bypass UAC";
+            // 
+            // tabPage14
+            // 
+            this.tabPage14.Controls.Add(this.button34);
+            this.tabPage14.Controls.Add(this.label28);
+            this.tabPage14.Location = new System.Drawing.Point(4, 22);
+            this.tabPage14.Name = "tabPage14";
+            this.tabPage14.Size = new System.Drawing.Size(901, 497);
+            this.tabPage14.TabIndex = 13;
+            this.tabPage14.Text = "External Apps";
+            this.tabPage14.UseVisualStyleBackColor = true;
+            // 
+            // button34
+            // 
+            this.button34.Location = new System.Drawing.Point(27, 39);
+            this.button34.Name = "button34";
+            this.button34.Size = new System.Drawing.Size(158, 23);
+            this.button34.TabIndex = 1;
+            this.button34.Text = "Launch Remote Pipe";
+            this.button34.UseVisualStyleBackColor = true;
+            this.button34.Click += new System.EventHandler(this.button34_Click);
+            // 
+            // label28
+            // 
+            this.label28.AutoSize = true;
+            this.label28.Location = new System.Drawing.Point(8, 12);
+            this.label28.Name = "label28";
+            this.label28.Size = new System.Drawing.Size(67, 13);
+            this.label28.TabIndex = 0;
+            this.label28.Text = "Proxy Server";
+            // 
+            // tabPage15
+            // 
+            this.tabPage15.Controls.Add(this.button38);
+            this.tabPage15.Controls.Add(this.button37);
+            this.tabPage15.Controls.Add(this.button36);
+            this.tabPage15.Controls.Add(this.button35);
+            this.tabPage15.Controls.Add(this.comboBox6);
+            this.tabPage15.Controls.Add(this.label33);
+            this.tabPage15.Controls.Add(this.label32);
+            this.tabPage15.Controls.Add(this.label31);
+            this.tabPage15.Controls.Add(this.label30);
+            this.tabPage15.Controls.Add(this.label29);
+            this.tabPage15.Controls.Add(this.listBox1);
+            this.tabPage15.Location = new System.Drawing.Point(4, 22);
+            this.tabPage15.Name = "tabPage15";
+            this.tabPage15.Size = new System.Drawing.Size(901, 497);
+            this.tabPage15.TabIndex = 14;
+            this.tabPage15.Text = "Plugins";
+            this.tabPage15.UseVisualStyleBackColor = true;
+            // 
+            // button38
+            // 
+            this.button38.Location = new System.Drawing.Point(551, 462);
+            this.button38.Name = "button38";
+            this.button38.Size = new System.Drawing.Size(75, 23);
+            this.button38.TabIndex = 10;
+            this.button38.Text = "Reload All";
+            this.button38.UseVisualStyleBackColor = true;
+            this.button38.Click += new System.EventHandler(this.button38_Click);
+            // 
+            // button37
+            // 
+            this.button37.Location = new System.Drawing.Point(470, 462);
+            this.button37.Name = "button37";
+            this.button37.Size = new System.Drawing.Size(75, 23);
+            this.button37.TabIndex = 9;
+            this.button37.Text = "Execute";
+            this.button37.UseVisualStyleBackColor = true;
+            this.button37.Click += new System.EventHandler(this.button37_Click);
+            // 
+            // button36
+            // 
+            this.button36.Location = new System.Drawing.Point(389, 462);
+            this.button36.Name = "button36";
+            this.button36.Size = new System.Drawing.Size(75, 23);
+            this.button36.TabIndex = 8;
+            this.button36.Text = "Remove";
+            this.button36.UseVisualStyleBackColor = true;
+            this.button36.Click += new System.EventHandler(this.button36_Click);
+            // 
+            // button35
+            // 
+            this.button35.Location = new System.Drawing.Point(308, 462);
+            this.button35.Name = "button35";
+            this.button35.Size = new System.Drawing.Size(75, 23);
+            this.button35.TabIndex = 7;
+            this.button35.Text = "Add";
+            this.button35.UseVisualStyleBackColor = true;
+            this.button35.Click += new System.EventHandler(this.button35_Click);
+            // 
+            // comboBox6
+            // 
+            this.comboBox6.FormattingEnabled = true;
+            this.comboBox6.Location = new System.Drawing.Point(364, 113);
+            this.comboBox6.Name = "comboBox6";
+            this.comboBox6.Size = new System.Drawing.Size(121, 21);
+            this.comboBox6.TabIndex = 6;
+            // 
+            // label33
+            // 
+            this.label33.AutoSize = true;
+            this.label33.Location = new System.Drawing.Point(293, 116);
+            this.label33.Name = "label33";
+            this.label33.Size = new System.Drawing.Size(65, 13);
+            this.label33.TabIndex = 5;
+            this.label33.Text = "Permissions:";
+            // 
+            // label32
+            // 
+            this.label32.AutoSize = true;
+            this.label32.Location = new System.Drawing.Point(293, 155);
+            this.label32.Name = "label32";
+            this.label32.Size = new System.Drawing.Size(63, 13);
+            this.label32.TabIndex = 4;
+            this.label32.Text = "Description:";
+            // 
+            // label31
+            // 
+            this.label31.AutoSize = true;
+            this.label31.Location = new System.Drawing.Point(293, 82);
+            this.label31.Name = "label31";
+            this.label31.Size = new System.Drawing.Size(41, 13);
+            this.label31.TabIndex = 3;
+            this.label31.Text = "Author:";
+            // 
+            // label30
+            // 
+            this.label30.AutoSize = true;
+            this.label30.Location = new System.Drawing.Point(293, 47);
+            this.label30.Name = "label30";
+            this.label30.Size = new System.Drawing.Size(45, 13);
+            this.label30.TabIndex = 2;
+            this.label30.Text = "Version:";
+            // 
+            // label29
+            // 
+            this.label29.AutoSize = true;
+            this.label29.Location = new System.Drawing.Point(293, 13);
+            this.label29.Name = "label29";
+            this.label29.Size = new System.Drawing.Size(38, 13);
+            this.label29.TabIndex = 1;
+            this.label29.Text = "Name:";
+            // 
+            // listBox1
+            // 
+            this.listBox1.FormattingEnabled = true;
+            this.listBox1.Location = new System.Drawing.Point(8, 13);
+            this.listBox1.Name = "listBox1";
+            this.listBox1.Size = new System.Drawing.Size(268, 472);
+            this.listBox1.TabIndex = 0;
+            this.listBox1.SelectedIndexChanged += new System.EventHandler(this.listBox1_SelectedIndexChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(909, 575);
+            this.ClientSize = new System.Drawing.Size(909, 523);
             this.Controls.Add(this.tabControl1);
             this.Name = "Form1";
-            this.Text = "Remote Server";
+            this.Text = "Tutorial C&C Server";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.Load += new System.EventHandler(this.Form1_Load);
             this.Shown += new System.EventHandler(this.Form1_Shown);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
@@ -1835,7 +1905,6 @@
             this.tabPage7.ResumeLayout(false);
             this.tabPage8.ResumeLayout(false);
             this.tabPage8.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.tabPage9.ResumeLayout(false);
             this.tabPage10.ResumeLayout(false);
@@ -1852,6 +1921,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.tabPage12.ResumeLayout(false);
             this.tabPage12.PerformLayout();
+            this.tabPage13.ResumeLayout(false);
+            this.tabPage13.PerformLayout();
+            this.tabPage14.ResumeLayout(false);
+            this.tabPage14.PerformLayout();
+            this.tabPage15.ResumeLayout(false);
+            this.tabPage15.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1921,7 +1996,7 @@
         private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem1;
         private System.Windows.Forms.TabPage tabPage5;
         private System.Windows.Forms.TextBox textBox5;
-        private System.Windows.Forms.RichTextBox richTextBoxCMD;
+        private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.Button button15;
         private System.Windows.Forms.TabPage tabPage6;
         private System.Windows.Forms.ListView listView3;
@@ -1959,11 +2034,11 @@
         private System.Windows.Forms.Button button16;
         private System.Windows.Forms.RichTextBox richTextBox3;
         private System.Windows.Forms.TabPage tabPage8;
-        private System.Windows.Forms.Button btnFullRemoteScreen;
-        public System.Windows.Forms.CheckBox checkBoxrKeyboard; //i made this a public to access from rDesktop
-        public System.Windows.Forms.CheckBox checkBoxrMouse;    //i made this a public to access from rDesktop
-        private System.Windows.Forms.Button btnStopRemoteScreen;
-        private System.Windows.Forms.Button btnStartRemoteScreen;
+        private System.Windows.Forms.Button button23;
+        private System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Button button22;
+        private System.Windows.Forms.Button button21;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.TabPage tabPage9;
         private System.Windows.Forms.Button button24;
@@ -2007,15 +2082,24 @@
         private System.Windows.Forms.ColumnHeader columnHeader21;
         private System.Windows.Forms.ColumnHeader columnHeader22;
         private System.Windows.Forms.Label label24;
-        public System.Windows.Forms.TrackBar trackBar1; //--------------- made this public 
-        public System.Windows.Forms.Label lblQualityShow;
+        private System.Windows.Forms.TabPage tabPage13;
+        private System.Windows.Forms.Button button33;
         private System.Windows.Forms.Label label27;
-        private System.Windows.Forms.TextBox txtBControlKeyboard;
-        private System.Windows.Forms.Button btnStartTaskManager;
-        private System.Windows.Forms.Label lblCMD;
-        private System.Windows.Forms.Button btnCountScreens;
-        private System.Windows.Forms.Label lblChooseScreen;
-        private System.Windows.Forms.ComboBox cmboChooseScreen;
+        private System.Windows.Forms.TabPage tabPage14;
+        private System.Windows.Forms.Button button34;
+        private System.Windows.Forms.Label label28;
+        private System.Windows.Forms.TabPage tabPage15;
+        private System.Windows.Forms.Button button37;
+        private System.Windows.Forms.Button button36;
+        private System.Windows.Forms.Button button35;
+        private System.Windows.Forms.ComboBox comboBox6;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.Label label32;
+        private System.Windows.Forms.Label label31;
+        private System.Windows.Forms.Label label30;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.Button button38;
     }
 }
 

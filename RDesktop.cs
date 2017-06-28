@@ -7,9 +7,6 @@ namespace TutServer
     public partial class RDesktop : Form
     {
 
-
-
-
         Form1 parent = new Form1();
         public Bitmap image;
 
@@ -22,7 +19,7 @@ namespace TutServer
         {
             if (Form1.rmouse == 1)
             {
-                if (e.Button == MouseButtons.Left)
+                if (e.Button == System.Windows.Forms.MouseButtons.Left)
                 {
                     parent.loopSend("rclick-left-down");
                 }
@@ -38,7 +35,7 @@ namespace TutServer
         {
             if (Form1.rmouse == 1)
             {
-                if (e.Button == MouseButtons.Left)
+                if (e.Button == System.Windows.Forms.MouseButtons.Left)
                 {
                     parent.loopSend("rclick-left-up");
                 }
@@ -52,8 +49,8 @@ namespace TutServer
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            Rectangle scr = Screen.PrimaryScreen.WorkingArea;
-            if (!Form1.isrdFull)
+            System.Drawing.Rectangle scr = Screen.PrimaryScreen.WorkingArea;
+            if (!Form1.IsRdFull)
             {
                 scr = pictureBox1.DisplayRectangle;
             }
@@ -74,25 +71,18 @@ namespace TutServer
                     }
                 }
             }
-            catch (Exception )
+            catch (Exception ex)
             {
-              //  MessageBox.Show("ERROR = " + ex.Message);
+
             }
         }
-        // can now send lowercase and uppercase
+
         private void RDesktop_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape)
-            {
-                contextMenuStrip1.Show();
-            }
-
-
-            if (Form1.rkeyboard == 1)         
+            if (Form1.rkeyboard == 1)
             {
 
-                string keysToSend = "";
-
+                String keysToSend = "";
                 if (e.Shift)
                     keysToSend += "+";
                 if (e.Alt)
@@ -100,30 +90,9 @@ namespace TutServer
                 if (e.Control)
                     keysToSend += "^";
 
-                if (Console.CapsLock == false)//--added this to send uppercase needs more work it wont work properlly without this
-                {
-
-                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
-                    {
-                        keysToSend += e.KeyCode.ToString().ToLower();
-                    }
-                       
-
-                }
-
-                if (Console.CapsLock == true)
-                {
-
-                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
-                    {
-                        keysToSend += e.KeyCode.ToString().ToUpper();
-                    }
-                        
-
-                }
-
-
-                 if (e.KeyCode.ToString().Equals("Back"))
+                if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    keysToSend += e.KeyCode.ToString().ToLower();
+                else if (e.KeyCode.ToString().Equals("Back"))
                     keysToSend += "{BS}";
                 else if (e.KeyCode.ToString().Equals("Pause"))
                     keysToSend += "{BREAK}";
@@ -238,8 +207,6 @@ namespace TutServer
                 else if (e.KeyValue == 243)
                     keysToSend += "ó";
 
-               // Form1 f1 = new Form1();
-                //f1.loopSend("rtype-" + keysToSend);
                 parent.loopSend("rtype-" + keysToSend);
             }
         }
@@ -247,67 +214,17 @@ namespace TutServer
         private void RDesktop_Shown(object sender, EventArgs e)
         {
             Timer t = new Timer();
-            t.Interval = FPS;
+            t.Interval = 100;
             t.Tick += new EventHandler(updateImage);
             t.Start();
         }
 
         private void updateImage(object sender, EventArgs e)
         {
-                ScreenFPS(); //this to set the fps
-                
+            if (image != null)
+            {
                 pictureBox1.Image = image;
-
-
-            GC.Collect();  //-----added this to cleanup resources
-            GC.WaitForPendingFinalizers();
-            System.Threading.Thread.SpinWait(5000);
-
-
-        }
-        //----close this form to give focus back to the sizable window in tab control
-        private void closeWindowToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            
-                Form1 f1 = new Form1();
-           
-            if(f1.checkBoxrKeyboard.Checked)
-            {
-                f1.checkBoxrKeyboard.Checked = false;
             }
-            if (f1.checkBoxrMouse.Checked)
-            {
-                f1.checkBoxrMouse.Checked = false;
-            }
-
-            Form1.isrdFull = false; //reset the picture back to form1 picturebox1
-            
-
-            
-                Close(); 
-           
-        
         }
-
-       
-        //SCREEN FPS
-        private int FPS = 80;
-        public void ScreenFPS()
-        {
-            Form1 f1 = new Form1();
-            int value = f1.trackBar1.Value;
-            f1.lblQualityShow.Text = value.ToString();
-
-            if (value < 25)  //frames per second the client also has to match this so a send cmd
-                FPS = 100;  //low
-            else if (value >= 85)
-                FPS = 80; //best
-            else if (value >= 75)
-                FPS = 50; //high
-            else if (value >= 25)
-                FPS = 150; //mid
-        }
-
-     
     }
 }
