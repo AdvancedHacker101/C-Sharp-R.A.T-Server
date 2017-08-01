@@ -953,10 +953,9 @@ namespace TutServer
             update.Tick += new EventHandler(updateValues);
             update.Start();
 
-            Class1.test = "not test";
-            //sh = new ScriptHost("scripts", this);
-            //sh.LoadDllFiles();
-            //sh.SetupBridge();
+            sh = new ScriptHost("scripts", this);
+            sh.LoadDllFiles();
+            sh.SetupBridge();
         }
 
         private void updateValues(object sender, EventArgs e)
@@ -1141,53 +1140,52 @@ namespace TutServer
         }
 
 
-	private void listClients()
-	{
-		int i = 0;
-        listView1.Items.Clear();
+	    private void listClients()
+	    {
+		    int i = 0;
+            listView1.Items.Clear();
 
-        foreach (Socket socket in _clientSockets)
-        {
-            ListViewItem lvi = new ListViewItem();
-            lvi.Text = i.ToString();
-
-            listView1.Items.Add(lvi);
-            i++;
-        }
-	}
-
-    private void CloseAllSockets()
-    {
-        IsStartedServer = false;
-        int id = 0;
-
-        foreach (Socket socket in _clientSockets)
-        {
-            try
+            foreach (Socket socket in _clientSockets)
             {
-                sendCommand("dc", id);
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
-                socket.Dispose();
+                ListViewItem lvi = new ListViewItem();
+                lvi.Text = i.ToString();
+
+                listView1.Items.Add(lvi);
+                i++;
             }
-            catch (Exception)
+	    }
+
+        private void CloseAllSockets()
+        {
+            IsStartedServer = false;
+            int id = 0;
+
+            foreach (Socket socket in _clientSockets)
             {
-                Console.WriteLine("Client" + id + " failed to send dc request!");
+                try
+                {
+                    sendCommand("dc", id);
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                    socket.Dispose();
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Client" + id + " failed to send dc request!");
+                }
+                id++;
             }
-            id++;
+
+            if (lcm != null) lcm.ResetAssociation();
+
+            _serverSocket.Close();
+            _serverSocket.Dispose();
+
+            _clientSockets.Clear();
         }
 
-        if (lcm != null) lcm.ResetAssociation();
 
-        _serverSocket.Close();
-        _serverSocket.Dispose();
-
-        _clientSockets.Clear();
-    }
-
-
-
-//AcceptCallback (when a server accepting client to connect)
+        //AcceptCallback (when a server accepting client to connect)
 
         private void AcceptCallback(IAsyncResult AR)
         {
@@ -3073,6 +3071,8 @@ namespace TutServer
                     ipm.OnExit();
                 }
             }
+
+            Environment.Exit(0);
         }
 
         private void button16_Click(object sender, EventArgs e)
