@@ -262,6 +262,4 @@ __pycache__/
 /TutServer/bin/Debug/TutServer.vshost.exe
 /TutServer/bin/Debug/TutServer.exe.config
 /TutServer/bin/Debug/TutServer.exe
-/TutServer/bin/Debug/scripts/ServerPlugin.dll
-/TutServer/bin/Debug/external/akaig64.exe
-/TutServer/bin/Debug/external/akaig64.exe
+/TutServer/bin/Debug/scripts/WebPlugin.dll
