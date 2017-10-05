@@ -1,119 +1,152 @@
-﻿using System;
-using System.Drawing;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System; //Fo basic system functions
+using System.Drawing; //For form graphics
+using System.Threading.Tasks; //For Tasks (they are similar to threads)
+using System.Windows.Forms; //For form intercation and controls
 
-namespace TutServer
+namespace TutServer //The application namespace
 {
+    /// <summary>
+    /// The main form for handling full screen remote desktop control
+    /// </summary>
     public partial class RDesktop : Form
     {
+        #region Global Variables
+
+        /// <summary>
+        /// Main Form reference
+        /// </summary>
         Form parent = Application.OpenForms["Form1"];
-    
+        /// <summary>
+        /// The frame sent by the client
+        /// </summary>
         public Bitmap image;
+        /// <summary>
+        /// FPS Update rate
+        /// </summary>
         private int FPS = 80;
+        /// <summary>
+        /// Mouse movement flag
+        /// </summary>
         private bool mouseMovement = true;
 
+        #endregion
+
+        #region Form and Remote Desktop Functions
+
+        /// <summary>
+        /// Create a new full screen remote desktop controller
+        /// </summary>
         public RDesktop()
         {
-            InitializeComponent();
+            InitializeComponent(); //Init the controls
 
-            ScreenFPS(); //this to set the fps
+            ScreenFPS(); //Set the FPS rate
 
-            MessageBox.Show("Press the (Esc) Key to Exit this Function " , "Information" ,MessageBoxButtons.OK ,MessageBoxIcon.Information);
-
-           
+            MessageBox.Show("Press the (Esc) Key to Exit this Function " , "Information" ,MessageBoxButtons.OK ,MessageBoxIcon.Information); //Notify the user
         }
 
+        /// <summary>
+        /// Handles remote mouse button clicks
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            if (Form1.rmouse == 1)
+            if (Form1.rmouse == 1) //If remote mouse is enabled
             {
-                if (e.Button == MouseButtons.Left)
+                if (e.Button == MouseButtons.Left) //If left button is clicked
                 {
                   
-                    ((Form1)parent).loopSend("rclick-left-down");
+                    ((Form1)parent).loopSend("rclick-left-down"); //Send command to client
                 }
-
-                else
+                else //Right button is clicked
                 {
-                  
-                    ((Form1)parent).loopSend("rclick-right-down");
+                    ((Form1)parent).loopSend("rclick-right-down"); //Send command to client
                 }
             }
         }
 
+        /// <summary>
+        /// Handles remote mouse button clicks
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            if (Form1.rmouse == 1)
+            if (Form1.rmouse == 1) //If remote mouse control is enabled
             {
-                if (e.Button == MouseButtons.Left)
+                if (e.Button == MouseButtons.Left) //The left button is pressed
                 {
-               
-                    ((Form1)parent).loopSend("rclick-left-up");
+                    ((Form1)parent).loopSend("rclick-left-up"); //Send command to client
                 }
-
-                else
+                else //Right button is pressed
                 {
-               
-                    ((Form1)parent).loopSend("rclick-right-up");
+                    ((Form1)parent).loopSend("rclick-right-up"); //Send command to client
                 }
             }
         }
 
+        /// <summary>
+        /// Handles remote mouse movement
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private async void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (mouseMovement == true)
+            if (mouseMovement == true) //if mouse movement is enabled
             {
-                Rectangle scr = Screen.PrimaryScreen.WorkingArea;
+                Rectangle scr = Screen.PrimaryScreen.WorkingArea; //Get the screen size
 
-                if (Form1.IsRdFull)
+                if (Form1.IsRdFull) //If we are in full screen mode
                 {
-
-                    scr = pictureBox1.DisplayRectangle;
+                    scr = pictureBox1.DisplayRectangle; //Get the size of the pictureBox
                 }
 
-                //Console.Title = scr.Width + ";" + scr.Height;
-                try
+                try //Try
                 {
-                    int mx = (e.X * Form1.resx) / scr.Width;
-                    int my = (e.Y * Form1.resy) / scr.Height;
+                    int mx = (e.X * Form1.resx) / scr.Width; //Calculate the remote mouse position X
+                    int my = (e.Y * Form1.resy) / scr.Height; //Calcualte the remote mouse position Y
 
-                    if (Form1.rmouse == 1)
+                    if (Form1.rmouse == 1) //If remoute mouse if enabled
                     {
-                        if (Form1.plx != e.X || Form1.ply != e.Y)
+                        if (Form1.plx != e.X || Form1.ply != e.Y) //The mouse moved after the last move
                         {
-                           
-                            ((Form1)parent).loopSend("rmove-" + mx + ":" + my);
-                            Form1.plx = e.X;
-                            Form1.ply = e.Y;
+                            ((Form1)parent).loopSend("rmove-" + mx + ":" + my); //Send command to client
+                            Form1.plx = e.X; //Store last X position
+                            Form1.ply = e.Y; //Store last Y position
 
-                            mouseMovement = false;
+                            mouseMovement = false; //Disable mouse movement
                         }
+                        //Wait for 200 ms
                         await Task.Delay(200); //this should stop the spammings of send commands -move the coursor very slowly and it will lockup so i added this
+                        //Re enable mouse movements
                         mouseMovement = true; //and this switch ,cant send again for 200 ms - it works perfectly i am happy with it :-)
                     }
                 }
-
-                catch (Exception)
+                catch (Exception) //Something went wrong
                 {
-
+                    //Do nothing
                 }
             }
         }
 
+        /// <summary>
+        /// Handles remote kexboard
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void RDesktop_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape)
+            if (e.KeyCode == Keys.Escape) //If escape is pressed
             {
-                closeWindowToolStripMenuItem1.Show();
+                closeWindowToolStripMenuItem1.Show(); //Open this CMS
             }
 
-
-            if (Form1.rkeyboard == 1)
+            if (Form1.rkeyboard == 1) //If remote keyboard is enabled
             {
+                string keysToSend = ""; //Declare the keys to send
 
-                string keysToSend = "";
-
+                //Append the modifier keys
                 if (e.Shift)
                     keysToSend += "+";
                 if (e.Alt)
@@ -121,25 +154,25 @@ namespace TutServer
                 if (e.Control)
                     keysToSend += "^";
 
-                if (Console.CapsLock == true)//--added this to send uppercase needs more work it wont work properlly without this
+                if (Console.CapsLock == true) //Caps Lock enabled
                 {
-
-                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90) //If key falls in this range
                     {
-                        keysToSend += e.KeyCode.ToString().ToLower();
+                        keysToSend += e.KeyCode.ToString().ToLower(); //Send the key in lowercase
                     }
                 }
 
-                if (Console.CapsLock == false)
+                if (Console.CapsLock == false) //If Caps Lock is disabled
                 {
-
-                    if (e.KeyValue >= 65 && e.KeyValue <= 90)
+                    if (e.KeyValue >= 65 && e.KeyValue <= 90) //If key falls in range
                     {
-                        keysToSend += e.KeyCode.ToString().ToUpper();
+                        keysToSend += e.KeyCode.ToString().ToUpper(); //Send the key in upper case
                     }
                     
                 }
                 
+                //Handle special keys
+
                 if (e.KeyCode.ToString().Equals("Back"))
                     keysToSend += "{BS}";
                 else if (e.KeyCode.ToString().Equals("Pause"))
@@ -257,36 +290,52 @@ namespace TutServer
 
              
                // parent.loopSend("rtype-" + keysToSend);
-                ((Form1)parent).loopSend("rtype-" + keysToSend);
+                ((Form1)parent).loopSend("rtype-" + keysToSend); //Send command to the client
             }
         }
 
+        /// <summary>
+        /// Handles the start of image updater
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void RDesktop_Shown(object sender, EventArgs e)
         {
-            Timer t = new Timer();
+            Timer t = new Timer(); //Create a new timer
             // t.Interval = 100;
-            t.Interval = FPS;
-            t.Tick += new EventHandler(updateImage);
-            t.Start();
+            t.Interval = FPS; //Set the frequency to the screen update rate
+            t.Tick += new EventHandler(updateImage); //Set the tick event handler
+            t.Start(); //Start the timer
         }
 
+        /// <summary>
+        /// Update the image frame
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void updateImage(object sender, EventArgs e)
         {
-           // ScreenFPS(); //this to set the fps
-
-            if (image != null)
+            if (image != null) //If the image is not null
             {
-                pictureBox1.Image = image;
+                pictureBox1.Image = image; //Set the image
             }
 
-            GC.Collect();  //-----added this to cleanup resources
+            //Call garbage collector
+            GC.Collect();
             GC.WaitForPendingFinalizers();
             System.Threading.Thread.SpinWait(5000);
         }
 
+        /// <summary>
+        /// Close the full screen view
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void closeWindowToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Form1 f1 = new Form1();
+            Form1 f1 = new Form1(); //Create a new Form1
+
+            //Reset the checkboxes
 
             if (f1.checkBoxrKeyboard.Checked)
             {
@@ -300,17 +349,18 @@ namespace TutServer
             Form1.IsRdFull = false; //reset the picture back to form1 picturebox1
 
            
-            Close();
+            Close(); //Close the form
         }
-        //SCREEN FPS
-       
+
+        /// <summary>
+        /// Set the FPS update rate
+        /// </summary>
         public void ScreenFPS()
         {
-            Form f1 = Application.OpenForms["Form1"];
-            int value = ((Form1)f1).trackBar1.Value;
-          
-           
+            Form f1 = Application.OpenForms["Form1"]; //Get the instance of the main form
+            int value = ((Form1)f1).trackBar1.Value; //Get the FPS value
 
+            //Set the fps rate
             if (value < 25)
                 FPS = 150;  //low
             else if (value >= 75 && value <= 85)
@@ -318,9 +368,9 @@ namespace TutServer
             else if (value >= 85)
                 FPS = 50; //high
             else if (value >= 25)
-                FPS = 100; //mid
-
-           
+                FPS = 100; //mid           
         }
+
+        #endregion
     }
 }

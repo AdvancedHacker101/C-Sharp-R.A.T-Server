@@ -29,9 +29,9 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewGroup listViewGroup4 = new System.Windows.Forms.ListViewGroup("Google Chrome", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup5 = new System.Windows.Forms.ListViewGroup("Internet Explorer", System.Windows.Forms.HorizontalAlignment.Left);
-            System.Windows.Forms.ListViewGroup listViewGroup6 = new System.Windows.Forms.ListViewGroup("Firefox", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Google Chrome", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup2 = new System.Windows.Forms.ListViewGroup("Internet Explorer", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup3 = new System.Windows.Forms.ListViewGroup("Firefox", System.Windows.Forms.HorizontalAlignment.Left);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.label24 = new System.Windows.Forms.Label();
@@ -190,6 +190,12 @@
             this.columnHeader21 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader22 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPage13 = new System.Windows.Forms.TabPage();
+            this.label36 = new System.Windows.Forms.Label();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.button23 = new System.Windows.Forms.Button();
+            this.comboBox7 = new System.Windows.Forms.ComboBox();
+            this.label35 = new System.Windows.Forms.Label();
+            this.button20 = new System.Windows.Forms.Button();
             this.button33 = new System.Windows.Forms.Button();
             this.label27 = new System.Windows.Forms.Label();
             this.tabPage14 = new System.Windows.Forms.TabPage();
@@ -1782,16 +1788,16 @@
             this.columnHeader21,
             this.columnHeader22});
             this.listView6.FullRowSelect = true;
-            listViewGroup4.Header = "Google Chrome";
-            listViewGroup4.Name = "listViewGroup1";
-            listViewGroup5.Header = "Internet Explorer";
-            listViewGroup5.Name = "listViewGroup2";
-            listViewGroup6.Header = "Firefox";
-            listViewGroup6.Name = "listViewGroup3";
+            listViewGroup1.Header = "Google Chrome";
+            listViewGroup1.Name = "listViewGroup1";
+            listViewGroup2.Header = "Internet Explorer";
+            listViewGroup2.Name = "listViewGroup2";
+            listViewGroup3.Header = "Firefox";
+            listViewGroup3.Name = "listViewGroup3";
             this.listView6.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup4,
-            listViewGroup5,
-            listViewGroup6});
+            listViewGroup1,
+            listViewGroup2,
+            listViewGroup3});
             this.listView6.Location = new System.Drawing.Point(8, 43);
             this.listView6.Name = "listView6";
             this.listView6.Size = new System.Drawing.Size(885, 419);
@@ -1816,6 +1822,12 @@
             // 
             // tabPage13
             // 
+            this.tabPage13.Controls.Add(this.label36);
+            this.tabPage13.Controls.Add(this.progressBar1);
+            this.tabPage13.Controls.Add(this.button23);
+            this.tabPage13.Controls.Add(this.comboBox7);
+            this.tabPage13.Controls.Add(this.label35);
+            this.tabPage13.Controls.Add(this.button20);
             this.tabPage13.Controls.Add(this.button33);
             this.tabPage13.Controls.Add(this.label27);
             this.tabPage13.Location = new System.Drawing.Point(4, 22);
@@ -1824,6 +1836,63 @@
             this.tabPage13.TabIndex = 12;
             this.tabPage13.Text = "Persistence";
             this.tabPage13.UseVisualStyleBackColor = true;
+            // 
+            // label36
+            // 
+            this.label36.AutoSize = true;
+            this.label36.Location = new System.Drawing.Point(212, 49);
+            this.label36.Name = "label36";
+            this.label36.Size = new System.Drawing.Size(21, 13);
+            this.label36.TabIndex = 8;
+            this.label36.Text = "0%";
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(156, 68);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(145, 23);
+            this.progressBar1.TabIndex = 7;
+            // 
+            // button23
+            // 
+            this.button23.Location = new System.Drawing.Point(212, 142);
+            this.button23.Name = "button23";
+            this.button23.Size = new System.Drawing.Size(89, 23);
+            this.button23.TabIndex = 6;
+            this.button23.Text = "Start Probe";
+            this.button23.UseVisualStyleBackColor = true;
+            this.button23.Click += new System.EventHandler(this.button23_Click);
+            // 
+            // comboBox7
+            // 
+            this.comboBox7.FormattingEnabled = true;
+            this.comboBox7.Items.AddRange(new object[] {
+            "Startup Folder",
+            "Registry",
+            "Task Scheduler"});
+            this.comboBox7.Location = new System.Drawing.Point(20, 144);
+            this.comboBox7.Name = "comboBox7";
+            this.comboBox7.Size = new System.Drawing.Size(186, 21);
+            this.comboBox7.TabIndex = 5;
+            // 
+            // label35
+            // 
+            this.label35.AutoSize = true;
+            this.label35.Location = new System.Drawing.Point(8, 116);
+            this.label35.Name = "label35";
+            this.label35.Size = new System.Drawing.Size(68, 13);
+            this.label35.TabIndex = 4;
+            this.label35.Text = "Start Probing";
+            // 
+            // button20
+            // 
+            this.button20.Location = new System.Drawing.Point(20, 68);
+            this.button20.Name = "button20";
+            this.button20.Size = new System.Drawing.Size(114, 23);
+            this.button20.TabIndex = 3;
+            this.button20.Text = "Auto Load";
+            this.button20.UseVisualStyleBackColor = true;
+            this.button20.Click += new System.EventHandler(this.button20_Click);
             // 
             // button33
             // 
@@ -2227,6 +2296,12 @@
         private System.Windows.Forms.TextBox txtBControlKeyboard;
         private System.Windows.Forms.Label label34;
         public System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.Button button23;
+        private System.Windows.Forms.ComboBox comboBox7;
+        private System.Windows.Forms.Label label35;
+        private System.Windows.Forms.Button button20;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Label label36;
     }
 }
 

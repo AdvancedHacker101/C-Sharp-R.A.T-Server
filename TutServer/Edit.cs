@@ -1,103 +1,175 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
-using sCore.UI;
+﻿using System; //For basic system functions
+using System.Collections.Generic; //For list
+using System.Drawing; //For form graphics
+using System.Windows.Forms; //For form interaction and controls
+using sCore.UI; //The plugin core UI
 
-namespace TutServer
+namespace TutServer //The application namespace
 {
+    /// <summary>
+    /// Class that handles editing of text based files
+    /// </summary>
     public partial class Edit : Form
     {
+        #region Global Variables
+
+        /// <summary>
+        /// The conten to edit
+        /// </summary>
         private String content;
+        /// <summary>
+        /// Reference to the main form
+        /// </summary>
         private Form1 prt;
 
+        #endregion
+
+        #region Form and Editor
+
+        /// <summary>
+        /// Create a new file editor
+        /// </summary>
+        /// <param name="textFile">The file content to edit</param>
+        /// <param name="parent">Reference to the main form</param>
         public Edit(String textFile, Form1 parent)
         {
-            content = textFile;
-            prt = parent;
-            InitializeComponent();
+            content = textFile; //Set the edit content
+            prt = parent; //Set the main form reference
+            InitializeComponent(); //Init the controls
         }
 
+        /// <summary>
+        /// Editor loaded the controls and the form
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void Edit_Shown(object sender, EventArgs e)
         {
-            richTextBox1.ReadOnly = true;
-            richTextBox1.BackColor = SystemColors.Window;
-            richTextBox1.Text = content;
-            CommonControls.editorTextBox = richTextBox1;
+            richTextBox1.ReadOnly = true; //Set mode to read only
+            richTextBox1.BackColor = SystemColors.Window; //Set the color to window (not the grayish color you get for read only)
+            richTextBox1.Text = content; //Set the editor content
+            CommonControls.editorTextBox = richTextBox1; //Notify the plugins of the file editor
         }
 
+        /// <summary>
+        /// Enable/Disable the read only property of the editor
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            bool isReadOnly = !checkBox1.Checked;
-            richTextBox1.ReadOnly = isReadOnly;
+            bool isReadOnly = !checkBox1.Checked; //Get the state of read only
+            richTextBox1.ReadOnly = isReadOnly; //Set the read only state
         }
 
+        /// <summary>
+        /// Clear the whole editor text
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button7_Click(object sender, EventArgs e)
         {
-            richTextBox1.Clear();
+            richTextBox1.Clear(); //Clear the editor box
         }
 
+        /// <summary>
+        /// Decrypt the contents of the file
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button6_Click(object sender, EventArgs e)
         {
-            try
+            try //Try
             {
-                String[] lines = richTextBox1.Lines;
-                List<String> decrypted = new List<String>();
-                foreach (String line in lines)
+                String[] lines = richTextBox1.Lines; //Get the lines of the text
+                List<String> decrypted = new List<String>(); //Declare a new list for decrypted lines
+                foreach (String line in lines) //Go through each encrypted line
                 {
-                    decrypted.Add(prt.Decrypt(line));
+                    decrypted.Add(prt.Decrypt(line)); //decrypt the line and add it to the list
                 }
-                richTextBox1.Lines = decrypted.ToArray();
-                richTextBox1.Refresh();
+                richTextBox1.Lines = decrypted.ToArray(); //Set the decrypted lines as the text
+                richTextBox1.Refresh(); //Refresh the richTextBox's display
             }
-            catch (Exception ex)
+            catch (Exception ex) //Can't decrypt
             {
-                MessageBox.Show(this, "Error", "Error trying to decrypt content!\n" + ex.Message, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Error", "Error trying to decrypt content!\n" + ex.Message, MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
             }
         }
 
+        /// <summary>
+        /// Encrypt the editor text
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button5_Click(object sender, EventArgs e)
         {
-            try
+            try //Try
             {
-                String[] lines = richTextBox1.Lines;
-                List<String> encrypted = new List<String>();
-                foreach (String line in lines)
+                String[] lines = richTextBox1.Lines; //Get the lines of the text
+                List<String> encrypted = new List<String>(); //Declare a new list for encrypted lines
+                foreach (String line in lines) //Go through each plain text line
                 {
-                    encrypted.Add(prt.Encrypt(line));
+                    encrypted.Add(prt.Encrypt(line)); //Encrypt the lines and add it to the list
                 }
-                richTextBox1.Lines = encrypted.ToArray();
-                richTextBox1.Refresh();
+                richTextBox1.Lines = encrypted.ToArray(); //Set the editor content to the encrypted lines
+                richTextBox1.Refresh(); //Refresh the editor display
             }
-            catch (Exception ex)
+            catch (Exception ex) //Can't encrypt
             {
-                MessageBox.Show(this, "Error", "Error trying to encrypt content!\n" + ex.Message, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Error", "Error trying to encrypt content!\n" + ex.Message, MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
             }
         }
 
+        /// <summary>
+        /// Redo the last change made to the content
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button4_Click(object sender, EventArgs e)
         {
-            richTextBox1.Redo();
+            richTextBox1.Redo(); //Redo a change
         }
 
+        /// <summary>
+        /// Undo the last change made to the content
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button3_Click(object sender, EventArgs e)
         {
-            richTextBox1.Undo();
+            richTextBox1.Undo(); //Undo the last change
         }
 
+        /// <summary>
+        /// Close without saving
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button2_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close(); //Close the form
         }
 
+        /// <summary>
+        /// Save the file on remote client
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void button1_Click(object sender, EventArgs e)
         {
-            prt.saveFile(richTextBox1.Text);
+            prt.saveFile(richTextBox1.Text); //Save the file
         }
 
+        /// <summary>
+        /// Form Closing event (not saving the file)
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
         private void Edit_FormClosing(object sender, FormClosingEventArgs e)
         {
-            CommonControls.editorTextBox = null;
+            CommonControls.editorTextBox = null; //Remove the editro reference from the plugins
         }
+
+        #endregion
     }
 }
