@@ -3,6 +3,8 @@ using System.Drawing; //For form graphics
 using System.Threading.Tasks; //For Tasks (they are similar to threads)
 using System.Windows.Forms; //For form intercation and controls
 
+#pragma warning disable IDE1006
+
 namespace TutServer //The application namespace
 {
     /// <summary>
@@ -57,11 +59,11 @@ namespace TutServer //The application namespace
                 if (e.Button == MouseButtons.Left) //If left button is clicked
                 {
                   
-                    ((Form1)parent).loopSend("rclick-left-down"); //Send command to client
+                    ((Form1)parent).SendToTarget("rclick-left-down"); //Send command to client
                 }
                 else //Right button is clicked
                 {
-                    ((Form1)parent).loopSend("rclick-right-down"); //Send command to client
+                    ((Form1)parent).SendToTarget("rclick-right-down"); //Send command to client
                 }
             }
         }
@@ -77,11 +79,11 @@ namespace TutServer //The application namespace
             {
                 if (e.Button == MouseButtons.Left) //The left button is pressed
                 {
-                    ((Form1)parent).loopSend("rclick-left-up"); //Send command to client
+                    ((Form1)parent).SendToTarget("rclick-left-up"); //Send command to client
                 }
                 else //Right button is pressed
                 {
-                    ((Form1)parent).loopSend("rclick-right-up"); //Send command to client
+                    ((Form1)parent).SendToTarget("rclick-right-up"); //Send command to client
                 }
             }
         }
@@ -111,7 +113,7 @@ namespace TutServer //The application namespace
                     {
                         if (Form1.plx != e.X || Form1.ply != e.Y) //The mouse moved after the last move
                         {
-                            ((Form1)parent).loopSend("rmove-" + mx + ":" + my); //Send command to client
+                            ((Form1)parent).SendToTarget("rmove-" + mx + ":" + my); //Send command to client
                             Form1.plx = e.X; //Store last X position
                             Form1.ply = e.Y; //Store last Y position
 
@@ -290,7 +292,7 @@ namespace TutServer //The application namespace
 
              
                // parent.loopSend("rtype-" + keysToSend);
-                ((Form1)parent).loopSend("rtype-" + keysToSend); //Send command to the client
+                ((Form1)parent).SendToTarget("rtype-" + keysToSend); //Send command to the client
             }
         }
 
@@ -301,10 +303,12 @@ namespace TutServer //The application namespace
         /// <param name="e">The event args</param>
         private void RDesktop_Shown(object sender, EventArgs e)
         {
-            Timer t = new Timer(); //Create a new timer
-            // t.Interval = 100;
-            t.Interval = FPS; //Set the frequency to the screen update rate
-            t.Tick += new EventHandler(updateImage); //Set the tick event handler
+            Timer t = new Timer
+            {
+                // t.Interval = 100;
+                Interval = FPS //Set the frequency to the screen update rate
+            }; //Create a new timer
+            t.Tick += new EventHandler(UpdateImage); //Set the tick event handler
             t.Start(); //Start the timer
         }
 
@@ -313,7 +317,7 @@ namespace TutServer //The application namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void updateImage(object sender, EventArgs e)
+        private void UpdateImage(object sender, EventArgs e)
         {
             if (image != null) //If the image is not null
             {

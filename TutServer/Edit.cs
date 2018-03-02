@@ -4,6 +4,8 @@ using System.Drawing; //For form graphics
 using System.Windows.Forms; //For form interaction and controls
 using sCore.UI; //The plugin core UI
 
+#pragma warning disable IDE1006
+
 namespace TutServer //The application namespace
 {
     /// <summary>
@@ -157,7 +159,7 @@ namespace TutServer //The application namespace
         /// <param name="e">The event args</param>
         private void button1_Click(object sender, EventArgs e)
         {
-            prt.saveFile(richTextBox1.Text); //Save the file
+            prt.SaveFile(richTextBox1.Text); //Save the file
         }
 
         /// <summary>

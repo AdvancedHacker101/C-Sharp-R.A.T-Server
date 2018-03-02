@@ -1,11 +1,13 @@
 ﻿using System.Windows.Forms; //For form intercation and controls
 
+#pragma warning disable IDE1006
+
 namespace TutServer //The application namespace
 {
     /// <summary>
     /// Class for handling remote IPC connections
     /// </summary>
-    public partial class remotePipe : Form
+    public partial class RemotePipe : Form
     {
         #region Global Variables
 
@@ -35,7 +37,7 @@ namespace TutServer //The application namespace
         /// </summary>
         /// <param name="pipeName">The name of the IPC server</param>
         /// <param name="context">Reference to the main form</param>
-        public remotePipe(string pipeName, Form1 context)
+        public RemotePipe(string pipeName, Form1 context)
         {
             InitializeComponent(); //Init the controls
             Text = "Remote Pipe Connection (" + pipeName + ")"; //Set the title text
@@ -55,7 +57,7 @@ namespace TutServer //The application namespace
             {
                 string data = textBox1.Text; //Get the data in the input
                 string cmd = "writeipc§" + pname + "§" + data; //Construct the command
-                ctx.loopSend(cmd); //Send the command to the client
+                ctx.SendToTarget(cmd); //Send the command to the client
                 textBox1.Text = ""; //Clear the input box
             }
         }

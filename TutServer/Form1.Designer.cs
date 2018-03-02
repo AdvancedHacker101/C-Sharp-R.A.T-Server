@@ -202,6 +202,7 @@
             this.button34 = new System.Windows.Forms.Button();
             this.label28 = new System.Windows.Forms.Label();
             this.tabPage15 = new System.Windows.Forms.TabPage();
+            this.button39 = new System.Windows.Forms.Button();
             this.button38 = new System.Windows.Forms.Button();
             this.button37 = new System.Windows.Forms.Button();
             this.button36 = new System.Windows.Forms.Button();
@@ -1945,6 +1946,7 @@
             // 
             // tabPage15
             // 
+            this.tabPage15.Controls.Add(this.button39);
             this.tabPage15.Controls.Add(this.button38);
             this.tabPage15.Controls.Add(this.button37);
             this.tabPage15.Controls.Add(this.button36);
@@ -1962,6 +1964,16 @@
             this.tabPage15.TabIndex = 14;
             this.tabPage15.Text = "Plugins";
             this.tabPage15.UseVisualStyleBackColor = true;
+            // 
+            // button39
+            // 
+            this.button39.Location = new System.Drawing.Point(632, 462);
+            this.button39.Name = "button39";
+            this.button39.Size = new System.Drawing.Size(75, 23);
+            this.button39.TabIndex = 11;
+            this.button39.Text = "Stop Signal";
+            this.button39.UseVisualStyleBackColor = true;
+            this.button39.Click += new System.EventHandler(this.button39_Click);
             // 
             // button38
             // 
@@ -2302,6 +2314,7 @@
         private System.Windows.Forms.Button button20;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label36;
+        private System.Windows.Forms.Button button39;
     }
 }
 

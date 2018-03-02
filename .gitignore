@@ -263,3 +263,4 @@ __pycache__/
 /TutServer/bin/Debug/TutServer.exe.config
 /TutServer/bin/Debug/TutServer.exe
 /TutServer/bin/Debug/scripts/WebPlugin.dll
+/TutServer/bin/Debug/scripts/AndroidExtension.dll

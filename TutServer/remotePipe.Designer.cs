@@ -1,6 +1,6 @@
 ﻿namespace TutServer
 {
-    partial class remotePipe
+    partial class RemotePipe
     {
         /// <summary>
         /// Required designer variable.
