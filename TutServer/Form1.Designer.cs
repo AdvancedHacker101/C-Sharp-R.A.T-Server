@@ -1841,6 +1841,7 @@
             // label36
             // 
             this.label36.AutoSize = true;
+            this.label36.Enabled = false;
             this.label36.Location = new System.Drawing.Point(212, 49);
             this.label36.Name = "label36";
             this.label36.Size = new System.Drawing.Size(21, 13);
@@ -1849,6 +1850,7 @@
             // 
             // progressBar1
             // 
+            this.progressBar1.Enabled = false;
             this.progressBar1.Location = new System.Drawing.Point(156, 68);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(145, 23);
@@ -1887,6 +1889,7 @@
             // 
             // button20
             // 
+            this.button20.Enabled = false;
             this.button20.Location = new System.Drawing.Point(20, 68);
             this.button20.Name = "button20";
             this.button20.Size = new System.Drawing.Size(114, 23);
