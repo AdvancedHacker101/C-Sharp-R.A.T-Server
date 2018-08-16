@@ -2291,7 +2291,6 @@ namespace TutServer //Main Namespace
                 }
                 if (text != null) //If text us not null
                 {
-
                     if (text.StartsWith("infoback;")) //Info received from client
                     {
                         int id = int.Parse(text.Split(';')[1]); //The client ID
@@ -3412,7 +3411,7 @@ namespace TutServer //Main Namespace
             }
             else
             {
-                richTextBox2.Text += text; //Append the output text
+                richTextBox2.Text += text + Environment.NewLine; //Append the output text
             }
         }
 
