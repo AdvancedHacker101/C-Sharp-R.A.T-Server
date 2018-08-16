@@ -40,7 +40,7 @@ namespace TutServer //The application namespace
         public RemotePipe(string pipeName, Form1 context)
         {
             InitializeComponent(); //Init the controls
-            Text = "Remote Pipe Connection (" + pipeName + ")"; //Set the title text
+            Text = $"Remote Pipe Connection ({pipeName})"; //Set the title text
             pname = pipeName; //Set the IPC server name
             ctx = context; //Set the main form reference
             outputBox = richTextBox1; //Set the output of the IPC server
@@ -56,7 +56,7 @@ namespace TutServer //The application namespace
             if (e.KeyCode == Keys.Enter) //if enter is pressed
             {
                 string data = textBox1.Text; //Get the data in the input
-                string cmd = "writeipc§" + pname + "§" + data; //Construct the command
+                string cmd = $"writeipc§{pname}§{data}"; //Construct the command
                 ctx.SendToTarget(cmd); //Send the command to the client
                 textBox1.Text = ""; //Clear the input box
             }

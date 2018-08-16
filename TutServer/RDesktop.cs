@@ -289,10 +289,8 @@ namespace TutServer //The application namespace
                     keysToSend += "ü";
                 else if (e.KeyValue == 243)
                     keysToSend += "ó";
-
              
-               // parent.loopSend("rtype-" + keysToSend);
-                ((Form1)parent).SendToTarget("rtype-" + keysToSend); //Send command to the client
+                ((Form1)parent).SendToTarget($"rtype-{keysToSend}"); //Send command to the client
             }
         }
 
@@ -337,7 +335,7 @@ namespace TutServer //The application namespace
         /// <param name="e">The event args</param>
         private void closeWindowToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Form1 f1 = new Form1(); //Create a new Form1
+            Form1 f1 = (Form1)parent; //Create a new Form1
 
             //Reset the checkboxes
 
@@ -361,8 +359,7 @@ namespace TutServer //The application namespace
         /// </summary>
         public void ScreenFPS()
         {
-            Form f1 = Application.OpenForms["Form1"]; //Get the instance of the main form
-            int value = ((Form1)f1).trackBar1.Value; //Get the FPS value
+            int value = ((Form1)parent).trackBar1.Value; //Get the FPS value
 
             //Set the fps rate
             if (value < 25)

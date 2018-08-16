@@ -18,7 +18,7 @@ namespace TutServer //The application namespace
         /// <summary>
         /// The conten to edit
         /// </summary>
-        private String content;
+        private string content;
         /// <summary>
         /// Reference to the main form
         /// </summary>
@@ -83,10 +83,11 @@ namespace TutServer //The application namespace
         {
             try //Try
             {
-                String[] lines = richTextBox1.Lines; //Get the lines of the text
-                List<String> decrypted = new List<String>(); //Declare a new list for decrypted lines
-                foreach (String line in lines) //Go through each encrypted line
+                string[] lines = richTextBox1.Lines; //Get the lines of the text
+                List<string> decrypted = new List<string>(); //Declare a new list for decrypted lines
+                for (int i = 0; i < lines.Length; i++)//Go through each encrypted line
                 {
+                    string line = lines[i];
                     decrypted.Add(prt.Decrypt(line)); //decrypt the line and add it to the list
                 }
                 richTextBox1.Lines = decrypted.ToArray(); //Set the decrypted lines as the text
@@ -107,10 +108,11 @@ namespace TutServer //The application namespace
         {
             try //Try
             {
-                String[] lines = richTextBox1.Lines; //Get the lines of the text
-                List<String> encrypted = new List<String>(); //Declare a new list for encrypted lines
-                foreach (String line in lines) //Go through each plain text line
+                string[] lines = richTextBox1.Lines; //Get the lines of the text
+                List<string> encrypted = new List<string>(); //Declare a new list for encrypted lines
+                for (int i = 0; i < lines.Length; i++)//Go through each plain text line
                 {
+                    string line = lines[i];
                     encrypted.Add(prt.Encrypt(line)); //Encrypt the lines and add it to the list
                 }
                 richTextBox1.Lines = encrypted.ToArray(); //Set the editor content to the encrypted lines

