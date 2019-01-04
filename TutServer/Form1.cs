@@ -2353,7 +2353,7 @@ namespace TutServer //Main Namespace
                                 string name = driveData[0]; //Get the label of the drive (C:, D:, E: etc.)
                                 string size = Convert(driveData[1]); //Get the total size of the drive
 
-                                AddFileCallback(name, size, "N/A", name); //Update the UI
+                                AddFileCallback(name, size, "Drive", name); //Update the UI
                             }
                         }
                         else if (text.StartsWith("fdirl")) //The client sent the list of entries in a directory
@@ -4362,7 +4362,7 @@ namespace TutServer //Main Namespace
             {
                 string path = listView3.SelectedItems[0].Text;
                 //if the item is not drive or a directory
-                if ((path.Length != 3 && !path.EndsWith(":\\")) || listView3.SelectedItems[0].SubItems[1].Text != "Directory")
+                if (listView3.SelectedItems[0].SubItems[2].Text != "Drive" && listView3.SelectedItems[0].SubItems[1].Text != "Directory")
                 {
                     MessageBox.Show(this, "The selected item is not a directory!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); //Notify the user
                     return; //Return
